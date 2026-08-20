@@ -13,13 +13,13 @@ fn main() {
 
         match user_input_iter.next() {
             Some("exit") => std::process::exit(0),
-            Some("echo") => print_slices(user_input_iter),
+            Some("echo") => builtin_echo(user_input_iter),
             _ => println!("{user_input}: command not found"),
         }
     }
 }
 
-fn print_slices(str_iter: SplitWhitespace<'_>) {
+fn builtin_echo(str_iter: SplitWhitespace<'_>) {
     for ele in str_iter {
         print!("{} ", ele)
     }
