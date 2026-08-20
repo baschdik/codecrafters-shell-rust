@@ -3,6 +3,12 @@ use std::io::{self, Write};
 use std::{collections::HashMap, str::SplitWhitespace};
 
 fn main() {
+    let builtin_commands: HashMap<&str, fn(SplitWhitespace<'_>)> = HashMap::from([
+        ("echo", builtin_echo as fn(SplitWhitespace<'_>)),
+        ("exit", builtin_exit),
+        ("type", builtin_type),
+    ]);
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -10,12 +16,6 @@ fn main() {
         io::stdin().read_line(&mut user_input).unwrap();
         user_input = user_input.trim().to_string();
         let mut user_input_iter = user_input.split_whitespace();
-
-        let builtin_commands: HashMap<&str, fn(SplitWhitespace<'_>)> = HashMap::from([
-            ("echo", builtin_echo as fn(SplitWhitespace<'_>)),
-            ("exit", builtin_exit),
-            ("type", builtin_type),
-        ]);
 
         let user_input_1 = user_input_iter.next().expect("No Some here");
 
