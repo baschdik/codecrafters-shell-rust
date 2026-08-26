@@ -102,7 +102,7 @@ fn builtin_type(str_split: Vec<String>) {
 fn run_external_cmd(fullpath: PathBuf, args: Vec<String>) {
     //println!("It's {}", fullpath.display()); //DEBUG
     //println!("Args: {:?}", &args[1..]); // DEBUG
-    let output = Command::new(fullpath)
+    let output = Command::new(&args[0])
         .args(&args[1..])
         .output()
         .expect("failed to run process");
