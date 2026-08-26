@@ -1,6 +1,10 @@
+use is_executable::is_executable;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::{
+    env::var,
+    fs,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -80,6 +84,26 @@ fn builtin_type(str_split: Vec<String>) {
 
 fn get_funcpath_from_path(cmd: &str) -> Option<PathBuf> {
     //TODO!
-    println!("{}", cmd);
+    let path = var("PATH").expect("No PATH found.");
+    for entry in path.split(":") {
+        //println!("PATH: {}", entry);
+        let full_cmd = entry.to_owned() + "/" + cmd;
+        println!("Full Path {}", full_cmd);
+        /* match fs::metadata(full_cmd) {
+            Ok(metadata) => println!("It exists! {:?}", metadata),
+            Err(_) => println!("Nope!"),
+        } */
+        /* if let Ok(metadata) = fs::metadata(full_cmd) {
+            let permissions = metadata.permissions();
+            println!("Permissions: {:o}", permissions.mode())
+        } */
+        if is_executable(full_cmd) {
+            println!("Exists and execuatbel")
+        }
+        //let path_cmd = Path::new(&full_cmd);
+        //println!("Full Path: {:?}", path_cmd);
+    }
+
+    println!("Cmd: {}", cmd);
     Some(PathBuf::from("/test/123.exe"))
 }
