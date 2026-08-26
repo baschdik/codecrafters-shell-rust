@@ -3,6 +3,7 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::{env::var, path::PathBuf, str::FromStr};
 
+#[allow(dead_code)]
 enum KindofCmd {
     Builtin(Builtins),
     External(PathBuf),
@@ -52,7 +53,7 @@ fn main() {
                 Builtins::Exit => builtin_exit(),
                 Builtins::Type => builtin_type(user_input_split),
             },
-            Ok(KindofCmd::External(fullpath)) => run_external_cmd(fullpath, user_input_split),
+            Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
     }
 }
@@ -99,9 +100,7 @@ fn builtin_type(str_split: Vec<String>) {
     }
 }
 
-fn run_external_cmd(fullpath: PathBuf, args: Vec<String>) {
-    //println!("It's {}", fullpath.display()); //DEBUG
-    //println!("Args: {:?}", &args[1..]); // DEBUG
+fn run_external_cmd(args: Vec<String>) {
     let output = Command::new(&args[0])
         .args(&args[1..])
         .output()
