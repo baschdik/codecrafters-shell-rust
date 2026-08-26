@@ -107,5 +107,5 @@ fn run_external_cmd(fullpath: PathBuf, args: Vec<String>) {
         .output()
         .expect("failed to run process");
     let output_msg = String::from_utf8(output.stdout);
-    println!("{}", output_msg.unwrap())
+    print!("{}", output_msg.unwrap())
 }
