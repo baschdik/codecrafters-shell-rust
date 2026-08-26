@@ -65,7 +65,7 @@ fn builtin_type(str_split: Vec<String>) {
         return;
     }
     match get_funcpath_from_path(&str_split[1]) {
-        Some(path) => println!("{} is {:?}", str_split[1], path),
+        Some(path) => println!("{} is {}", str_split[1], path.display()),
         None => println!("{}: not found", str_split[1]),
     }
 }
