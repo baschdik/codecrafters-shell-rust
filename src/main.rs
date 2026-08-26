@@ -71,7 +71,6 @@ fn builtin_type(str_split: Vec<String>) {
 }
 
 fn get_funcpath_from_path(cmd: &str) -> Option<PathBuf> {
-    //TODO!
     let path = var("PATH").expect("No PATH found.");
     for entry in path.split(":") {
         let full_cmd = entry.to_owned() + "/" + cmd;
