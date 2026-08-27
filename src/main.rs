@@ -1,8 +1,7 @@
 use is_executable::is_executable;
 use std::env;
 use std::io::{self, Write};
-use std::process::Command;
-use std::{env::var, path::PathBuf, str::FromStr};
+use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 
 #[allow(dead_code)]
 enum KindofCmd {
@@ -66,7 +65,7 @@ fn main() {
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
                 Builtins::Cd => builtin_cd(user_input_split),
-                Builtins::History => builtin_history(&cmd_history),
+                Builtins::History => builtin_history(user_input_split, &cmd_history),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
@@ -122,8 +121,8 @@ fn builtin_cd(str_split: Vec<String>) {
     }
 }
 
-fn builtin_echo(str_iter: Vec<String>) {
-    for ele in &str_iter[1..] {
+fn builtin_echo(user_str: Vec<String>) {
+    for ele in &user_str[1..] {
         print!("{} ", ele)
     }
     println!()
@@ -133,9 +132,27 @@ fn builtin_exit() {
     std::process::exit(0)
 }
 
-fn builtin_history(cmd_history: &Vec<String>) {
-    for (index, entry) in cmd_history.iter().enumerate() {
-        println!("{:>5} {}", index + 1, entry)
+fn builtin_history(user_str: Vec<String>, cmd_history: &Vec<String>) {
+    let recent: usize = if user_str.len() >= 2 {
+        match user_str[1].parse::<usize>() {
+            Ok(val) => {
+                if val <= cmd_history.len() && val > 0 {
+                    val
+                } else {
+                    cmd_history.len()
+                }
+            }
+            Err(_) => {
+                println!("Usage: history n  - n: Integer");
+                return;
+            }
+        }
+    } else {
+        cmd_history.len()
+    };
+
+    for (index, entry) in cmd_history[cmd_history.len() - recent..].iter().enumerate() {
+        println!("{:>5} {}", index + 1 + cmd_history.len() - recent, entry)
     }
 }
 
