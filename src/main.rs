@@ -1,6 +1,6 @@
 use is_executable::is_executable;
-use std::env;
 use std::io::{self, Write};
+use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 
 #[allow(dead_code)]
@@ -65,7 +65,7 @@ fn main() {
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
                 Builtins::Cd => builtin_cd(user_input_split),
-                Builtins::History => builtin_history(user_input_split, &cmd_history),
+                Builtins::History => builtin_history(user_input_split, &mut cmd_history),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
@@ -132,23 +132,50 @@ fn builtin_exit() {
     std::process::exit(0)
 }
 
-fn builtin_history(user_str: Vec<String>, cmd_history: &Vec<String>) {
-    let num_last_cmds: usize = if user_str.len() >= 2 {
-        match user_str[1].parse::<usize>() {
-            Ok(val) if val == 0 || val >= cmd_history.len() => cmd_history.len(),
-            Ok(val) => val,
-            Err(_) => {
-                println!("Usage: history n  - n: Integer");
-                return;
-            }
-        }
-    } else {
-        cmd_history.len()
-    };
-    let from_index = cmd_history.len() - num_last_cmds;
+fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
+    let history_length = cmd_history.len();
+    let mut number_cmds_toshow = history_length;
+    let mut read_history_file = false;
 
-    for (index, entry) in cmd_history[from_index..].iter().enumerate() {
-        println!("{:>5} {}", index + 1 + from_index, entry)
+    if user_str.len() >= 2 {
+        if user_str[1] == "-r" {
+            read_history_file = true;
+        } else {
+            number_cmds_toshow = match user_str[1].parse::<usize>() {
+                Ok(val) if val == 0 || val >= history_length => history_length,
+                Ok(val) => val,
+                Err(_) => {
+                    println!("Usage: history n  - n: Integer");
+                    return;
+                }
+            };
+        }
+    }
+
+    if read_history_file {
+        if user_str.len() < 3 {
+            println!("Usage: history -r <Path_to_History>")
+        }
+        /*let history_file_content =
+            fs::read_to_string(&user_str[2]).expect("Reading history file failed!");
+        let mut content_split: Vec<String> = history_file_content
+            .trim()
+            .split("\n")
+            .map(|s| s.to_owned())
+            .collect(); */
+        let mut history_file_content: Vec<String> = fs::read_to_string(&user_str[2])
+            .expect("Reading history file failed!")
+            .trim()
+            .split("\n")
+            .map(|s| s.to_owned())
+            .collect();
+        cmd_history.append(&mut history_file_content);
+        return;
+    }
+
+    let from_index = history_length - number_cmds_toshow;
+    for (current_index, entry) in cmd_history[from_index..].iter().enumerate() {
+        println!("{:>5} {}", current_index + 1 + from_index, entry)
     }
 }
 
