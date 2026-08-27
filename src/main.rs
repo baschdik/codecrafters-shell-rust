@@ -133,15 +133,10 @@ fn builtin_exit() {
 }
 
 fn builtin_history(user_str: Vec<String>, cmd_history: &Vec<String>) {
-    let recent: usize = if user_str.len() >= 2 {
+    let num_last_cmds: usize = if user_str.len() >= 2 {
         match user_str[1].parse::<usize>() {
-            Ok(val) => {
-                if val <= cmd_history.len() && val > 0 {
-                    val
-                } else {
-                    cmd_history.len()
-                }
-            }
+            Ok(val) if val == 0 || val >= cmd_history.len() => cmd_history.len(),
+            Ok(val) => val,
             Err(_) => {
                 println!("Usage: history n  - n: Integer");
                 return;
@@ -150,9 +145,10 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &Vec<String>) {
     } else {
         cmd_history.len()
     };
+    let from_index = cmd_history.len() - num_last_cmds;
 
-    for (index, entry) in cmd_history[cmd_history.len() - recent..].iter().enumerate() {
-        println!("{:>5} {}", index + 1 + cmd_history.len() - recent, entry)
+    for (index, entry) in cmd_history[from_index..].iter().enumerate() {
+        println!("{:>5} {}", index + 1 + from_index, entry)
     }
 }
 
