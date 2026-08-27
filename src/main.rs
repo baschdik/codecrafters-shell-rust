@@ -75,7 +75,7 @@ fn get_userinput() -> Vec<String> {
 }
 
 fn get_cmd_from_path(cmd: &str) -> Option<PathBuf> {
-    let path = var("PATH").expect("No PATH found.");
+    let path = var("PATH").expect("No $PATH found.");
     for entry in path.split(":") {
         let full_cmd = entry.to_owned() + "/" + cmd;
         if is_executable(&full_cmd) {
@@ -121,7 +121,15 @@ fn builtin_pwd() {
 }
 
 fn builtin_cd(str_split: Vec<String>) {
-    if let Err(_) = env::set_current_dir(&str_split[1]) {
-        println!("cd: {}: No such file or directory", str_split[1])
+    if str_split.len() == 1 {
+        return;
+    }
+    let path_str = match &str_split[1][..] {
+        "~" => var("HOME").expect("No $HOME found."),
+        _ => str_split[1].to_string(),
+    };
+
+    if let Err(_) = env::set_current_dir(&path_str) {
+        println!("cd: {}: No such file or directory", path_str)
     }
 }
