@@ -50,6 +50,9 @@ impl FromStr for Builtins {
 fn main() {
     loop {
         let user_input_split = get_userinput();
+        if user_input_split.len() == 0 {
+            continue;
+        }
         let command = user_input_split[0].parse::<KindofCmd>();
         match command {
             Err(_) => println!("{}: command not found", &user_input_split[0]),
