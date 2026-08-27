@@ -1,4 +1,5 @@
 use is_executable::is_executable;
+use std::env;
 use std::io::{self, Write};
 use std::process::Command;
 use std::{env::var, path::PathBuf, str::FromStr};
@@ -27,6 +28,7 @@ enum Builtins {
     Echo,
     Exit,
     Type,
+    Pwd,
 }
 
 impl FromStr for Builtins {
@@ -37,6 +39,7 @@ impl FromStr for Builtins {
             "echo" => Ok(Builtins::Echo),
             "exit" => Ok(Builtins::Exit),
             "type" => Ok(Builtins::Type),
+            "pwd" => Ok(Builtins::Pwd),
             _ => Err(()),
         }
     }
@@ -52,6 +55,7 @@ fn main() {
                 Builtins::Echo => builtin_echo(user_input_split),
                 Builtins::Exit => builtin_exit(),
                 Builtins::Type => builtin_type(user_input_split),
+                Builtins::Pwd => builtin_pwd(),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
@@ -78,6 +82,15 @@ fn get_cmd_from_path(cmd: &str) -> Option<PathBuf> {
     None
 }
 
+fn run_external_cmd(args: Vec<String>) {
+    let output = Command::new(&args[0])
+        .args(&args[1..])
+        .output()
+        .expect("failed to run process");
+    let output_msg = String::from_utf8(output.stdout);
+    print!("{}", output_msg.unwrap())
+}
+
 fn builtin_echo(str_iter: Vec<String>) {
     for ele in &str_iter[1..] {
         print!("{} ", ele)
@@ -100,11 +113,6 @@ fn builtin_type(str_split: Vec<String>) {
     }
 }
 
-fn run_external_cmd(args: Vec<String>) {
-    let output = Command::new(&args[0])
-        .args(&args[1..])
-        .output()
-        .expect("failed to run process");
-    let output_msg = String::from_utf8(output.stdout);
-    print!("{}", output_msg.unwrap())
+fn builtin_pwd() {
+    println!("{}", env::current_dir().expect("pwd failed").display())
 }
