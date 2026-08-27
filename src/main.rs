@@ -50,8 +50,10 @@ impl FromStr for Builtins {
 }
 
 fn main() {
+    let mut cmd_history: Vec<String> = Vec::new();
+
     loop {
-        let user_input_split = get_userinput();
+        let user_input_split = get_userinput(&mut cmd_history);
         if user_input_split.len() == 0 {
             continue;
         }
@@ -64,19 +66,23 @@ fn main() {
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
                 Builtins::Cd => builtin_cd(user_input_split),
-                Builtins::History => builtin_history(),
+                Builtins::History => builtin_history(&cmd_history),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
     }
 }
 
-fn get_userinput() -> Vec<String> {
+fn get_userinput(cmd_history: &mut Vec<String>) -> Vec<String> {
     print!("$ ");
     io::stdout().flush().unwrap();
+
     let mut user_input = String::new();
     io::stdin().read_line(&mut user_input).unwrap();
+
     user_input = user_input.trim().to_string();
+    cmd_history.push(user_input.to_owned());
+
     user_input.split_whitespace().map(String::from).collect()
 }
 
@@ -127,7 +133,11 @@ fn builtin_exit() {
     std::process::exit(0)
 }
 
-fn builtin_history() {}
+fn builtin_history(cmd_history: &Vec<String>) {
+    for (index, entry) in cmd_history.iter().enumerate() {
+        println!("{:>5} {}", index + 1, entry)
+    }
+}
 
 fn builtin_pwd() {
     println!("{}", env::current_dir().expect("pwd failed").display())
