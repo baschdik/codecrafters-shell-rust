@@ -29,6 +29,7 @@ enum Builtins {
     Exit,
     Type,
     Pwd,
+    Cd,
 }
 
 impl FromStr for Builtins {
@@ -40,6 +41,7 @@ impl FromStr for Builtins {
             "exit" => Ok(Builtins::Exit),
             "type" => Ok(Builtins::Type),
             "pwd" => Ok(Builtins::Pwd),
+            "cd" => Ok(Builtins::Cd),
             _ => Err(()),
         }
     }
@@ -56,6 +58,7 @@ fn main() {
                 Builtins::Exit => builtin_exit(),
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
+                Builtins::Cd => builtin_cd(user_input_split),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
@@ -115,4 +118,10 @@ fn builtin_type(str_split: Vec<String>) {
 
 fn builtin_pwd() {
     println!("{}", env::current_dir().expect("pwd failed").display())
+}
+
+fn builtin_cd(str_split: Vec<String>) {
+    if let Err(_) = env::set_current_dir(&str_split[1]) {
+        println!("cd: {}: No such file or directory", str_split[1])
+    }
 }
