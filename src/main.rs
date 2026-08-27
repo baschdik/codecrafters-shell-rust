@@ -30,6 +30,7 @@ enum Builtins {
     Type,
     Pwd,
     Cd,
+    History,
 }
 
 impl FromStr for Builtins {
@@ -42,6 +43,7 @@ impl FromStr for Builtins {
             "type" => Ok(Builtins::Type),
             "pwd" => Ok(Builtins::Pwd),
             "cd" => Ok(Builtins::Cd),
+            "history" => Ok(Builtins::History),
             _ => Err(()),
         }
     }
@@ -62,6 +64,7 @@ fn main() {
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
                 Builtins::Cd => builtin_cd(user_input_split),
+                Builtins::History => builtin_history(),
             },
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
@@ -97,31 +100,7 @@ fn run_external_cmd(args: Vec<String>) {
     print!("{}", output_msg.unwrap())
 }
 
-fn builtin_echo(str_iter: Vec<String>) {
-    for ele in &str_iter[1..] {
-        print!("{} ", ele)
-    }
-    println!()
-}
-
-fn builtin_exit() {
-    std::process::exit(0)
-}
-
-fn builtin_type(str_split: Vec<String>) {
-    if let Ok(_) = str_split[1].parse::<Builtins>() {
-        println!("{} is a shell builtin", &str_split[1]);
-        return;
-    }
-    match get_cmd_from_path(&str_split[1]) {
-        Some(path) => println!("{} is {}", str_split[1], path.display()),
-        None => println!("{}: not found", str_split[1]),
-    }
-}
-
-fn builtin_pwd() {
-    println!("{}", env::current_dir().expect("pwd failed").display())
-}
+// Builtin commands implementation starts here
 
 fn builtin_cd(str_split: Vec<String>) {
     if str_split.len() == 1 {
@@ -134,5 +113,33 @@ fn builtin_cd(str_split: Vec<String>) {
 
     if let Err(_) = env::set_current_dir(&path_str) {
         println!("cd: {}: No such file or directory", path_str)
+    }
+}
+
+fn builtin_echo(str_iter: Vec<String>) {
+    for ele in &str_iter[1..] {
+        print!("{} ", ele)
+    }
+    println!()
+}
+
+fn builtin_exit() {
+    std::process::exit(0)
+}
+
+fn builtin_history() {}
+
+fn builtin_pwd() {
+    println!("{}", env::current_dir().expect("pwd failed").display())
+}
+
+fn builtin_type(str_split: Vec<String>) {
+    if let Ok(_) = str_split[1].parse::<Builtins>() {
+        println!("{} is a shell builtin", &str_split[1]);
+        return;
+    }
+    match get_cmd_from_path(&str_split[1]) {
+        Some(path) => println!("{} is {}", str_split[1], path.display()),
+        None => println!("{}: not found", str_split[1]),
     }
 }
