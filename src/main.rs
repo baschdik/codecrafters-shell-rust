@@ -136,10 +136,13 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
     let history_length = cmd_history.len();
     let mut number_cmds_toshow = history_length;
     let mut read_history_file = false;
+    let mut write_history_file = false;
 
     if user_str.len() >= 2 {
         if user_str[1] == "-r" {
             read_history_file = true;
+        } else if user_str[1] == "-w" {
+            write_history_file = true;
         } else {
             number_cmds_toshow = match user_str[1].parse::<usize>() {
                 Ok(val) if val == 0 || val >= history_length => history_length,
@@ -156,13 +159,6 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
         if user_str.len() < 3 {
             println!("Usage: history -r <Path_to_History>")
         }
-        /*let history_file_content =
-            fs::read_to_string(&user_str[2]).expect("Reading history file failed!");
-        let mut content_split: Vec<String> = history_file_content
-            .trim()
-            .split("\n")
-            .map(|s| s.to_owned())
-            .collect(); */
         let mut history_file_content: Vec<String> = fs::read_to_string(&user_str[2])
             .expect("Reading history file failed!")
             .trim()
@@ -171,6 +167,14 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
             .collect();
         cmd_history.append(&mut history_file_content);
         return;
+    }
+
+    if write_history_file {
+        if user_str.len() < 3 {
+            println!("Usage: history -w <Path_to_History>")
+        }
+        //TODO!
+        //fs::write(&user_str[2], cmd_history);
     }
 
     let from_index = history_length - number_cmds_toshow;
