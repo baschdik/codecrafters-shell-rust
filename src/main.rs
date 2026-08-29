@@ -50,8 +50,16 @@ impl FromStr for Builtins {
     }
 }
 
+struct CmdHistory {
+    data: Vec<String>,
+    line_written_to_file: Option<usize>,
+}
+
 fn main() {
-    let mut cmd_history: Vec<String> = Vec::new();
+    let mut cmd_history = CmdHistory {
+        data: Vec::new(),
+        line_written_to_file: None,
+    };
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
@@ -74,7 +82,7 @@ fn main() {
     }
 }
 
-fn get_userinput(cmd_history: &mut Vec<String>) -> Vec<String> {
+fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
     io::stdout().flush().unwrap();
 
@@ -82,7 +90,7 @@ fn get_userinput(cmd_history: &mut Vec<String>) -> Vec<String> {
     io::stdin().read_line(&mut user_input).unwrap();
 
     user_input = user_input.trim().to_string();
-    cmd_history.push(user_input.to_owned());
+    cmd_history.data.push(user_input.to_owned());
 
     user_input.split_whitespace().map(String::from).collect()
 }
@@ -192,7 +200,7 @@ enum HistoryArgErrors {
     NoIntArg,
 }
 
-fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
+fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
     match HistoryArgs::new(user_str) {
         Err(e) => {
             println!("{}", e);
@@ -208,40 +216,41 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
     trait Show {
         fn show(&self);
         fn show_last(&self, no_entry_toshow: usize);
+        fn read_in(&mut self, path: &str);
+        fn write_to(&mut self, path: &str);
+        fn append_to(&mut self, path: &str);
     }
 
-    impl Show for &mut Vec<String> {
+    impl Show for CmdHistory {
         fn show(&self) {
-            self.show_last(self.len());
+            self.show_last(self.data.len());
         }
 
         fn show_last(&self, no_entry_toshow: usize) {
-            let from_index = self.len() - no_entry_toshow;
-            for (current_index, entry) in self[from_index..].iter().enumerate() {
+            let from_index = self.data.len() - no_entry_toshow;
+            for (current_index, entry) in self.data[from_index..].iter().enumerate() {
                 println!("{:>5} {}", current_index + 1 + from_index, entry);
             }
         }
-    }
 
-    trait FileOps {
-        fn read_in(&mut self, path: &str);
-        fn write_to(&self, path: &str);
-        fn append_to(&self, path: &str);
-    }
-
-    impl FileOps for Vec<String> {
-        fn write_to(&self, path: &str) {
-            let history_str = self.join("\n") + "\n";
+        fn write_to(&mut self, path: &str) {
+            let history_str = self.data.join("\n") + "\n";
             fs::write(path, history_str).expect("Failed to append to history file!");
+            self.line_written_to_file = Some(self.data.len() - 1)
         }
 
-        fn append_to(&self, path: &str) {
-            let history_str = self.join("\n") + "\n";
+        fn append_to(&mut self, path: &str) {
+            let write_from = match self.line_written_to_file {
+                None => 0,
+                Some(n) => n + 1,
+            };
+            let history_str = self.data[write_from..].join("\n") + "\n";
             let mut f = File::options()
                 .append(true)
                 .open(path)
                 .expect("Failed to open history file!");
             write!(&mut f, "{}", history_str).expect("Failed to append to history file!");
+            self.line_written_to_file = Some(self.data.len() - 1)
         }
 
         fn read_in(&mut self, path: &str) {
@@ -251,59 +260,9 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
                 .split("\n")
                 .map(|s| s.to_owned())
                 .collect();
-            self.append(&mut history_file_content);
+            self.data.append(&mut history_file_content);
         }
     }
-
-    /*
-    let mut number_cmds_toshow = history_length;
-    let mut read_history_file = false;
-    let mut write_history_file = false;
-
-    if user_str.len() >= 2 {
-        if user_str[1] == "-r" {
-            read_history_file = true;
-        } else if user_str[1] == "-w" {
-            write_history_file = true;
-        } else {
-            number_cmds_toshow = match user_str[1].parse::<usize>() {
-                Ok(val) if val == 0 || val >= history_length => history_length,
-                Ok(val) => val,
-                Err(_) => {
-                    println!("Usage: history n  - n: Integer");
-                    return;
-                }
-            };
-        }
-    }
-
-    if read_history_file {
-        if user_str.len() < 3 {
-            println!("Usage: history -r <Path_to_History>")
-        }
-        let mut history_file_content: Vec<String> = fs::read_to_string(&user_str[2])
-            .expect("Reading history file failed!")
-            .trim()
-            .split("\n")
-            .map(|s| s.to_owned())
-            .collect();
-        cmd_history.append(&mut history_file_content);
-        return;
-    }
-
-    if write_history_file {
-        if user_str.len() < 3 {
-            println!("Usage: history -w <Path_to_History>")
-        }
-        let history_str = cmd_history.join("\n") + "\n";
-        fs::write(&user_str[2], history_str);
-        return;
-    }
-
-    let from_index = history_length - number_cmds_toshow;
-    for (current_index, entry) in cmd_history[from_index..].iter().enumerate() {
-        println!("{:>5} {}", current_index + 1 + from_index, entry)
-    } */
 }
 
 fn builtin_pwd() {
