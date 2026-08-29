@@ -173,7 +173,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
         if user_str.len() < 3 {
             println!("Usage: history -w <Path_to_History>")
         }
-        let history_str = cmd_history.join("\n");
+        let history_str = cmd_history.join("\n") + "\n";
         //println!("his str: {}", history_str);
         //println!("the vec: {:?}", cmd_history);
         fs::write(&user_str[2], history_str);
