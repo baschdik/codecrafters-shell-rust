@@ -150,7 +150,7 @@ impl HistoryArgs {
         match &user_str[1][..] {
             "-r" => {
                 if user_str.len() >= 3 {
-                    return Ok(HistoryArgs::ReadHistory(user_str[3].to_string()));
+                    return Ok(HistoryArgs::ReadHistory(user_str[2].to_string()));
                 } else {
                     return Err(HistoryArgErrors::MissingPathArgument(
                         "Usage: history -r <Path_to_History>".to_string(),
@@ -159,7 +159,7 @@ impl HistoryArgs {
             }
             "-w" => {
                 if user_str.len() >= 3 {
-                    return Ok(HistoryArgs::WriteHistory(user_str[3].to_string()));
+                    return Ok(HistoryArgs::WriteHistory(user_str[2].to_string()));
                 } else {
                     return Err(HistoryArgErrors::MissingPathArgument(
                         "Usage: history -w <Path_to_History>".to_string(),
@@ -168,7 +168,7 @@ impl HistoryArgs {
             }
             "-a" => {
                 if user_str.len() >= 3 {
-                    return Ok(HistoryArgs::AppendHistory(user_str[3].to_string()));
+                    return Ok(HistoryArgs::AppendHistory(user_str[2].to_string()));
                 } else {
                     return Err(HistoryArgErrors::MissingPathArgument(
                         "Usage: history -a <Path_to_History>".to_string(),
