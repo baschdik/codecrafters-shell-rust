@@ -1,7 +1,9 @@
 use is_executable::is_executable;
+use std::fs::File;
 use std::io::{self, Write};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
+use thiserror::Error;
 
 #[allow(dead_code)]
 enum KindofCmd {
@@ -132,8 +134,128 @@ fn builtin_exit() {
     std::process::exit(0)
 }
 
+enum HistoryArgs {
+    Show,
+    ShowLast(usize),
+    ReadHistory(String),
+    WriteHistory(String),
+    AppendHistory(String),
+}
+
+impl HistoryArgs {
+    fn new(user_str: Vec<String>) -> Result<HistoryArgs, HistoryArgErrors> {
+        if user_str.len() == 1 {
+            return Ok(HistoryArgs::Show);
+        }
+        match &user_str[1][..] {
+            "-r" => {
+                if user_str.len() >= 3 {
+                    return Ok(HistoryArgs::ReadHistory(user_str[3].to_string()));
+                } else {
+                    return Err(HistoryArgErrors::MissingPathArgument(
+                        "Usage: history -r <Path_to_History>".to_string(),
+                    ));
+                }
+            }
+            "-w" => {
+                if user_str.len() >= 3 {
+                    return Ok(HistoryArgs::WriteHistory(user_str[3].to_string()));
+                } else {
+                    return Err(HistoryArgErrors::MissingPathArgument(
+                        "Usage: history -w <Path_to_History>".to_string(),
+                    ));
+                }
+            }
+            "-a" => {
+                if user_str.len() >= 3 {
+                    return Ok(HistoryArgs::AppendHistory(user_str[3].to_string()));
+                } else {
+                    return Err(HistoryArgErrors::MissingPathArgument(
+                        "Usage: history -a <Path_to_History>".to_string(),
+                    ));
+                }
+            }
+            n => match n.parse::<usize>() {
+                Ok(val) => return Ok(HistoryArgs::ShowLast(val)),
+                Err(_) => return Err(HistoryArgErrors::NoIntArg),
+            },
+        };
+    }
+}
+
+#[derive(Error, Debug)]
+enum HistoryArgErrors {
+    #[error("Missing Path Argument: {0}")]
+    MissingPathArgument(String),
+
+    #[error("Number of Entrys to Show must be Integer")]
+    NoIntArg,
+}
+
 fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
-    let history_length = cmd_history.len();
+    match HistoryArgs::new(user_str) {
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
+        Ok(HistoryArgs::Show) => cmd_history.show(),
+        Ok(HistoryArgs::ShowLast(n)) => cmd_history.show_last(n),
+        Ok(HistoryArgs::ReadHistory(path)) => cmd_history.read_in(&path),
+        Ok(HistoryArgs::WriteHistory(path)) => cmd_history.write_to(&path),
+        Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
+    }
+
+    trait Show {
+        fn show(&self);
+        fn show_last(&self, no_entry_toshow: usize);
+    }
+
+    impl Show for &mut Vec<String> {
+        fn show(&self) {
+            self.show_last(self.len());
+        }
+
+        fn show_last(&self, no_entry_toshow: usize) {
+            let from_index = self.len() - no_entry_toshow;
+            for (current_index, entry) in self[from_index..].iter().enumerate() {
+                println!("{:>5} {}", current_index + 1 + from_index, entry);
+            }
+        }
+    }
+
+    trait FileOps {
+        fn read_in(&mut self, path: &str);
+        fn write_to(&self, path: &str);
+        fn append_to(&self, path: &str);
+    }
+
+    impl FileOps for Vec<String> {
+        fn write_to(&self, path: &str) {
+            let history_str = self.join("\n") + "\n";
+            fs::write(path, history_str).expect("Failed to append to history file!");
+        }
+
+        fn append_to(&self, path: &str) {
+            let history_str = self.join("\n") + "\n";
+            let mut f = File::options()
+                .append(true)
+                .open(path)
+                .expect("Failed to open history file!");
+            write!(&mut f, "{}", history_str).expect("Failed to append to history file!");
+        }
+
+        fn read_in(&mut self, path: &str) {
+            let mut history_file_content: Vec<String> = fs::read_to_string(path)
+                .expect("Reading history file failed!")
+                .trim()
+                .split("\n")
+                .map(|s| s.to_owned())
+                .collect();
+            self.append(&mut history_file_content);
+        }
+    }
+
+    /*
     let mut number_cmds_toshow = history_length;
     let mut read_history_file = false;
     let mut write_history_file = false;
@@ -174,8 +296,6 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
             println!("Usage: history -w <Path_to_History>")
         }
         let history_str = cmd_history.join("\n") + "\n";
-        //println!("his str: {}", history_str);
-        //println!("the vec: {:?}", cmd_history);
         fs::write(&user_str[2], history_str);
         return;
     }
@@ -183,7 +303,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut Vec<String>) {
     let from_index = history_length - number_cmds_toshow;
     for (current_index, entry) in cmd_history[from_index..].iter().enumerate() {
         println!("{:>5} {}", current_index + 1 + from_index, entry)
-    }
+    } */
 }
 
 fn builtin_pwd() {
