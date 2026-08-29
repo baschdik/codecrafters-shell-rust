@@ -213,7 +213,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
     }
 
-    trait Show {
+    trait Hist {
         fn show(&self);
         fn show_last(&self, no_entry_toshow: usize);
         fn read_in(&mut self, path: &str);
@@ -221,7 +221,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
         fn append_to(&mut self, path: &str);
     }
 
-    impl Show for CmdHistory {
+    impl Hist for CmdHistory {
         fn show(&self) {
             self.show_last(self.data.len());
         }
