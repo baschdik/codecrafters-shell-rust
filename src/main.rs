@@ -104,7 +104,7 @@ impl HistHandling for CmdHistory {
         self.data.append(&mut history_file_content);
         //if history_file_content.len() == 0 {
         //    eprintln!("Hist file cont {:?}", history_file_content);
-        }
+        //}
         Ok(self.data.len())
     }
 }
