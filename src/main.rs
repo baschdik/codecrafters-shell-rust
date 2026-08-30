@@ -147,6 +147,9 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     io::stdin().read_line(&mut user_input).unwrap();
 
     user_input = user_input.trim().to_string();
+    if user_input == "" {
+        eprintln!("Write '' to cmd_history");
+    }
     cmd_history.data.push(user_input.to_owned());
 
     user_input.split_whitespace().map(String::from).collect()
@@ -213,7 +216,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
                 .expect("Couldn't read Histfile at given path");
         }
         Ok(HistoryArgs::WriteHistory(path)) => {
-            eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
+            //eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
             cmd_history.write_to(&path)
         }
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
