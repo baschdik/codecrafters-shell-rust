@@ -117,7 +117,7 @@ fn main() {
             cmd_history.line_written_to_file = Some(n - 1);
         }
     };
-    eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
+    //eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
