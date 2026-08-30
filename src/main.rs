@@ -1,6 +1,6 @@
 use is_executable::is_executable;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, Error, Write};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 use thiserror::Error;
@@ -96,6 +96,12 @@ impl HistHandling for CmdHistory {
     }
 
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error> {
+        //Don't append empty file
+        let metadata = fs::metadata(path)?;
+        if metadata.len() == 0 {
+            return Err(Error::new(io::ErrorKind::Other, "File is empty"));
+        }
+
         let mut history_file_content: Vec<String> = fs::read_to_string(path)?
             .trim()
             .split("\n")
