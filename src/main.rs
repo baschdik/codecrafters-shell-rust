@@ -58,7 +58,7 @@ struct CmdHistory {
 trait HistHandling {
     fn show(&self);
     fn show_last(&self, num_entry_toshow: usize);
-    fn read_in(&mut self, path: &str) -> Result<(usize), io::Error>;
+    fn read_in(&mut self, path: &str) -> Result<usize, io::Error>;
     fn write_to(&mut self, path: &str);
     fn append_to(&mut self, path: &str);
 }
@@ -95,7 +95,7 @@ impl HistHandling for CmdHistory {
         self.line_written_to_file = Some(self.data.len() - 1)
     }
 
-    fn read_in(&mut self, path: &str) -> Result<(usize), io::Error> {
+    fn read_in(&mut self, path: &str) -> Result<usize, io::Error> {
         let mut history_file_content: Vec<String> = fs::read_to_string(path)?
             .trim()
             .split("\n")
