@@ -118,7 +118,9 @@ fn main() {
     if let Ok(histfile) = var("HISTFILE") {
         if let Ok(n) = cmd_history.read_in(&histfile) {
             cmd_history.line_written_to_file = Some(n - 1);
-            eprintln!("cmd_hist data: {:?}", cmd_history.data)
+            if cmd_history.data[0] == "" {
+                eprintln!("cmd_hist data: {:?}", cmd_history.data)
+            }
         }
     };
 
