@@ -96,7 +96,7 @@ impl HistHandling for CmdHistory {
     }
 
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error> {
-        //Don't append empty file
+        //Don't append an empty file
         let metadata = fs::metadata(path)?;
         if metadata.len() == 0 {
             return Err(Error::new(io::ErrorKind::Other, "File is empty"));
@@ -108,9 +108,6 @@ impl HistHandling for CmdHistory {
             .map(|s| s.to_owned())
             .collect();
         self.data.append(&mut history_file_content);
-        //if history_file_content.len() == 0 {
-        //    eprintln!("Hist file cont {:?}", history_file_content);
-        //}
         Ok(self.data.len())
     }
 }
@@ -124,9 +121,6 @@ fn main() {
     if let Ok(histfile) = var("HISTFILE") {
         if let Ok(n) = cmd_history.read_in(&histfile) {
             cmd_history.line_written_to_file = Some(n - 1);
-            if cmd_history.data[0] == "" {
-                eprintln!("cmd_hist data: {:?}", cmd_history.data)
-            }
         }
     };
 
@@ -159,9 +153,6 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     io::stdin().read_line(&mut user_input).unwrap();
 
     user_input = user_input.trim().to_string();
-    if user_input == " " {
-        eprintln!("Write '' to cmd_history");
-    }
     cmd_history.data.push(user_input.to_owned());
 
     user_input.split_whitespace().map(String::from).collect()
@@ -227,10 +218,7 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
                 .read_in(&path)
                 .expect("Couldn't read Histfile at given path");
         }
-        Ok(HistoryArgs::WriteHistory(path)) => {
-            //eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
-            cmd_history.write_to(&path)
-        }
+        Ok(HistoryArgs::WriteHistory(path)) => cmd_history.write_to(&path),
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
     }
     enum HistoryArgs {
