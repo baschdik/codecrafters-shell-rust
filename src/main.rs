@@ -102,7 +102,9 @@ impl HistHandling for CmdHistory {
             .map(|s| s.to_owned())
             .collect();
         self.data.append(&mut history_file_content);
-        eprintln!("{:?}", history_file_content);
+        if history_file_content.len() == 1 {
+            eprintln!("{:?}", history_file_content);
+        }
         Ok(self.data.len())
     }
 }
