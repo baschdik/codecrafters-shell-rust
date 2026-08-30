@@ -117,7 +117,6 @@ fn main() {
             cmd_history.line_written_to_file = Some(n - 1);
         }
     };
-    //eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
@@ -213,7 +212,10 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
                 .read_in(&path)
                 .expect("Couldn't read Histfile at given path");
         }
-        Ok(HistoryArgs::WriteHistory(path)) => cmd_history.write_to(&path),
+        Ok(HistoryArgs::WriteHistory(path)) => {
+            eprintln!("Thats in cmd_history after init: {:?}", cmd_history.data); //DEBUG
+            cmd_history.write_to(&path)
+        }
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
     }
     enum HistoryArgs {
