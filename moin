@@ -1,5 +1,0 @@
-echo 2
-echo 55
-history -w moin
-ls
-history -w moin
