@@ -147,7 +147,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     io::stdin().read_line(&mut user_input).unwrap();
 
     user_input = user_input.trim().to_string();
-    if user_input == "" {
+    if user_input == " " {
         eprintln!("Write '' to cmd_history");
     }
     cmd_history.data.push(user_input.to_owned());
