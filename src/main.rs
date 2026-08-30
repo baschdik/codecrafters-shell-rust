@@ -102,8 +102,8 @@ impl HistHandling for CmdHistory {
             .map(|s| s.to_owned())
             .collect();
         self.data.append(&mut history_file_content);
-        if history_file_content.len() == 0 {
-            eprintln!("Hist file cont {:?}", history_file_content);
+        //if history_file_content.len() == 0 {
+        //    eprintln!("Hist file cont {:?}", history_file_content);
         }
         Ok(self.data.len())
     }
@@ -118,6 +118,7 @@ fn main() {
     if let Ok(histfile) = var("HISTFILE") {
         if let Ok(n) = cmd_history.read_in(&histfile) {
             cmd_history.line_written_to_file = Some(n - 1);
+            eprintln!("cmd_hist data: {:?}", cmd_history.data)
         }
     };
 
