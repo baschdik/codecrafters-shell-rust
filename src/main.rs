@@ -113,16 +113,7 @@ impl HistHandling for CmdHistory {
 }
 
 fn main() {
-    let mut cmd_history = CmdHistory {
-        data: Vec::new(),
-        line_written_to_file: None,
-    };
-
-    if let Ok(histfile) = var("HISTFILE") {
-        if let Ok(n) = cmd_history.read_in(&histfile) {
-            cmd_history.line_written_to_file = Some(n - 1);
-        }
-    };
+    let mut cmd_history = create_init_cmd_history();
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
@@ -134,7 +125,7 @@ fn main() {
             Err(_) => println!("{}: command not found", &user_input_split[0]),
             Ok(KindofCmd::Builtin(cmd)) => match cmd {
                 Builtins::Echo => builtin_echo(user_input_split),
-                Builtins::Exit => builtin_exit(),
+                Builtins::Exit => builtin_exit(&mut cmd_history),
                 Builtins::Type => builtin_type(user_input_split),
                 Builtins::Pwd => builtin_pwd(),
                 Builtins::Cd => builtin_cd(user_input_split),
@@ -143,6 +134,20 @@ fn main() {
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
     }
+}
+
+fn create_init_cmd_history() -> CmdHistory {
+    let mut cmd_history = CmdHistory {
+        data: Vec::new(),
+        line_written_to_file: None,
+    };
+
+    if let Ok(histfile) = var("HISTFILE") {
+        if let Ok(n) = cmd_history.read_in(&histfile) {
+            cmd_history.line_written_to_file = Some(n - 1);
+        }
+    };
+    cmd_history
 }
 
 fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
@@ -201,7 +206,10 @@ fn builtin_echo(user_str: Vec<String>) {
     println!()
 }
 
-fn builtin_exit() {
+fn builtin_exit(cmd_history: &mut CmdHistory) {
+    if let Ok(histfile) = var("HISTFILE") {
+        cmd_history.write_to(&histfile);
+    }
     std::process::exit(0)
 }
 
