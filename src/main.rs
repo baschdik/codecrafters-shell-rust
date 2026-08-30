@@ -103,7 +103,6 @@ impl HistHandling for CmdHistory {
             .collect();
         self.data.append(&mut history_file_content);
         Ok(())
-        //TODO: set cmds already written correct!
     }
 }
 
@@ -115,7 +114,7 @@ fn main() {
 
     let histfile = var("HISTFILE").expect("No $HISTFILE found.");
     let _ = cmd_history.read_in(&histfile);
-    cmd_history.line_written_to_file = Some(cmd_history.data.len());
+    cmd_history.line_written_to_file = Some(cmd_history.data.len() - 1);
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
