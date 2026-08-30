@@ -58,7 +58,7 @@ struct CmdHistory {
 trait HistHandling {
     fn show(&self);
     fn show_last(&self, num_entry_toshow: usize);
-    fn read_in(&mut self, path: &str) -> Result<(), io::Error>;
+    fn read_in(&mut self, path: &str) -> Result<(usize), io::Error>;
     fn write_to(&mut self, path: &str);
     fn append_to(&mut self, path: &str);
 }
@@ -77,7 +77,7 @@ impl HistHandling for CmdHistory {
 
     fn write_to(&mut self, path: &str) {
         let history_str = self.data.join("\n") + "\n";
-        fs::write(path, history_str).expect("Failed to append to history file!");
+        fs::write(path, history_str).expect("Failed to write to history file!");
         self.line_written_to_file = Some(self.data.len() - 1)
     }
 
@@ -95,14 +95,14 @@ impl HistHandling for CmdHistory {
         self.line_written_to_file = Some(self.data.len() - 1)
     }
 
-    fn read_in(&mut self, path: &str) -> Result<(), io::Error> {
+    fn read_in(&mut self, path: &str) -> Result<(usize), io::Error> {
         let mut history_file_content: Vec<String> = fs::read_to_string(path)?
             .trim()
             .split("\n")
             .map(|s| s.to_owned())
             .collect();
         self.data.append(&mut history_file_content);
-        Ok(())
+        Ok(self.data.len())
     }
 }
 
@@ -113,8 +113,9 @@ fn main() {
     };
 
     let histfile = var("HISTFILE").expect("No $HISTFILE found.");
-    let _ = cmd_history.read_in(&histfile);
-    cmd_history.line_written_to_file = Some(cmd_history.data.len() - 1);
+    if let Ok(n) = cmd_history.read_in(&histfile) {
+        cmd_history.line_written_to_file = Some(n - 1);
+    };
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
@@ -205,9 +206,11 @@ fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
         }
         Ok(HistoryArgs::Show) => cmd_history.show(),
         Ok(HistoryArgs::ShowLast(n)) => cmd_history.show_last(n),
-        Ok(HistoryArgs::ReadHistory(path)) => cmd_history
-            .read_in(&path)
-            .expect("Couldn't read Histfile at given path"),
+        Ok(HistoryArgs::ReadHistory(path)) => {
+            cmd_history
+                .read_in(&path)
+                .expect("Couldn't read Histfile at given path");
+        }
         Ok(HistoryArgs::WriteHistory(path)) => cmd_history.write_to(&path),
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
     }
