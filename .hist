@@ -1,0 +1,48 @@
+rustshell 
+echo $HISTFILE
+cat echo $HISTFILE
+echo cat echo $HISTFILE
+echo $$
+echo $
+echo $0
+echo $1
+pwd
+echo $HISTFILE
+export HISTFILE=/home/basti/Projects/codecrafters-shell-rust/.histfile
+echo $HISTFILE
+clear; cargo run
+ll
+echo $HISTFILE
+clear; cargo run
+codecrafters submit
+echo $HISTFILE
+mv .histfile .histfile1
+cargo run
+codecrafters submit
+cargo run
+less .histfile
+ll
+less .histfile
+gedit .histfile &
+cargo run
+codecrafters submit
+echo $HISTFILE
+unset HISTFILE
+rm .histfile
+ll
+rm .histfile1 
+rm moin 
+cargo run
+codecrafters submit
+cargo run
+export HISTFILE=.hist
+echo $HISTFILE
+touch .hist
+ll hist
+ll .hist
+cargo run
+codecrafters submit
+declare 
+declare -h
+declare --help
+exit
