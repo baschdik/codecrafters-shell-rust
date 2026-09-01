@@ -185,13 +185,13 @@ fn run_external_cmd(args: Vec<String>) {
 
 // Builtin commands implementation starts here
 
-fn builtin_cd(str_split: Vec<String>) {
-    if str_split.len() == 1 {
+fn builtin_cd(user_str: Vec<String>) {
+    if user_str.len() == 1 {
         return;
     }
-    let path_str = match &str_split[1][..] {
+    let path_str = match &user_str[1][..] {
         "~" => var("HOME").expect("No $HOME found."),
-        _ => str_split[1].to_string(),
+        _ => user_str[1].to_string(),
     };
 
     if let Err(_) = env::set_current_dir(&path_str) {
