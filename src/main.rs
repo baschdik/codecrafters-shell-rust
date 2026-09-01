@@ -1,8 +1,13 @@
 use is_executable::is_executable;
 use std::fs::File;
-use std::io::{self, Error, Write};
+use std::io::{self, Error, Write, stdin, stdout};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
+use termion::clear;
+use termion::cursor::{DetectCursorPos, Goto, Left};
+use termion::event::{Event, Key};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
 use thiserror::Error;
 
 #[allow(dead_code)]
@@ -61,6 +66,7 @@ trait HistHandling {
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error>;
     fn write_to(&mut self, path: &str);
     fn append_to(&mut self, path: &str);
+    fn get_from_latest(&self, entry_num: usize) -> Option<String>;
 }
 
 impl HistHandling for CmdHistory {
@@ -110,6 +116,15 @@ impl HistHandling for CmdHistory {
         self.data.append(&mut history_file_content);
         Ok(self.data.len())
     }
+
+    fn get_from_latest(&self, entry_num: usize) -> Option<String> {
+        if (self.data.len() as i64 - entry_num as i64 - 1) < 0 {
+            return None;
+        }
+        let from_index = self.data.len() - entry_num - 1;
+        Some(self.data[from_index].to_string())
+        //TODO: Implement None if i is to high
+    }
 }
 
 fn main() {
@@ -152,10 +167,61 @@ fn create_init_cmd_history() -> CmdHistory {
 
 fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
-    io::stdout().flush().unwrap();
+    let stdin = stdin();
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    stdout.flush().unwrap();
 
     let mut user_input = String::new();
-    io::stdin().read_line(&mut user_input).unwrap();
+    let mut last_cmd_counter = 0;
+    for evt in stdin.events() {
+        let evt = evt.unwrap();
+        match evt {
+            Event::Key(Key::Char('\n')) => {
+                user_input.push('\n');
+                let (_, row) = stdout.cursor_pos().unwrap();
+                _ = write!(stdout, "{}", Goto(0, row + 1));
+                stdout.flush().unwrap();
+                break;
+            }
+            Event::Key(Key::Left) => {
+                let (col, row) = stdout.cursor_pos().unwrap();
+                if col <= 3 {
+                    continue; //Dont delete the Prompt on Screen
+                }
+                _ = write!(stdout, "{}", Goto(col - 1, row))
+            }
+            Event::Key(Key::Up) => {
+                if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
+                    user_input.clear();
+                    user_input += &cmd_string[..];
+                    let (_, row) = stdout.cursor_pos().unwrap();
+                    _ = write!(
+                        stdout,
+                        "{}{}$ {}",
+                        clear::CurrentLine,
+                        Goto(0, row),
+                        cmd_string
+                    );
+                    stdout.flush().unwrap();
+                    last_cmd_counter += 1;
+                }
+            }
+            Event::Key(Key::Backspace) => {
+                user_input.pop();
+                let (col, row) = stdout.cursor_pos().unwrap();
+                if col <= 3 {
+                    continue; //Dont delete the Prompt on Screen
+                }
+                _ = write!(stdout, "{}{}", Goto(col - 1, row), clear::AfterCursor,)
+            }
+            Event::Key(Key::Char(char)) => {
+                user_input.push(char);
+                _ = write!(stdout, "{}", char,);
+                stdout.flush().unwrap()
+            }
+            _ => continue,
+        }
+    }
 
     user_input = user_input.trim().to_string();
     cmd_history.data.push(user_input.to_owned());
