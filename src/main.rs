@@ -4,7 +4,7 @@ use std::io::{self, Error, Write, stdin, stdout};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 use termion::clear;
-use termion::cursor::{DetectCursorPos, Goto, Left};
+use termion::cursor::{DetectCursorPos, Goto};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -178,8 +178,12 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
         match evt {
             Event::Key(Key::Char('\n')) => {
                 user_input.push('\n');
-                let (_, row) = stdout.cursor_pos().unwrap();
-                _ = write!(stdout, "{}", Goto(0, row + 1));
+                let pos = stdout.cursor_pos();
+                match pos {
+                    Ok((_, row)) => _ = write!(stdout, "{}", Goto(0, row + 1)),
+                    Err(x) => _ = write!(stdout, "{}", x),
+                }
+
                 stdout.flush().unwrap();
                 break;
             }
