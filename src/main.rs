@@ -166,18 +166,18 @@ fn create_init_cmd_history() -> CmdHistory {
     cmd_history
 }
 
+trait HandleKeyEnvent: Write {
+    fn show_char(&mut self, char: &char);
+}
+
+impl<W: Write> HandleKeyEnvent for W {
+    fn show_char(&mut self, char: &char) {
+        _ = write!(self, "{}", char,);
+        self.flush().unwrap()
+    }
+}
+
 fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
-    trait HandleKeyEnvent {
-        fn write_char(&mut self, char: &char);
-    }
-
-    impl HandleKeyEnvent for RawTerminal<Stdout> {
-        fn write_char(&mut self, char: &char) {
-            _ = write!(self, "{}", char,);
-            self.flush().unwrap()
-        }
-    }
-
     print!("$ ");
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -221,7 +221,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
-                stdout.write_char(&char);
+                stdout.show_char(&char);
                 //_ = write!(stdout, "{}", char,);
                 //stdout.flush().unwrap()
             }
