@@ -1,12 +1,12 @@
 use is_executable::is_executable;
 use std::fs::File;
-use std::io::{self, Error, Write, stdin, stdout};
+use std::io::{self, Error, Stdout, Write, stdin, stdout};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 use termion::cursor::DetectCursorPos;
 use termion::event::{Event, Key};
 use termion::input::TermRead;
-use termion::raw::IntoRawMode;
+use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
 use thiserror::Error;
 
@@ -167,6 +167,17 @@ fn create_init_cmd_history() -> CmdHistory {
 }
 
 fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
+    trait HandleKeyEnvent {
+        fn write_char(&mut self, char: &char);
+    }
+
+    impl HandleKeyEnvent for RawTerminal<Stdout> {
+        fn write_char(&mut self, char: &char) {
+            _ = write!(self, "{}", char,);
+            self.flush().unwrap()
+        }
+    }
+
     print!("$ ");
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -210,8 +221,9 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
-                _ = write!(stdout, "{}", char,);
-                stdout.flush().unwrap()
+                stdout.write_char(&char);
+                //_ = write!(stdout, "{}", char,);
+                //stdout.flush().unwrap()
             }
             _ => continue,
         }
