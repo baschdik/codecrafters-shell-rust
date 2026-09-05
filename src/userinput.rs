@@ -1,13 +1,9 @@
-use is_executable::is_executable;
-use std::env;
 use std::io::{Stdout, Write, stdin, stdout};
-use std::{env::var, path::PathBuf, process::Command, str::FromStr};
 use termion::cursor::DetectCursorPos;
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
-use thiserror::Error;
 
 use super::history::{CmdHistory, HistHandling};
 
