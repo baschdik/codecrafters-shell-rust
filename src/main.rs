@@ -10,6 +10,9 @@ use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
 use thiserror::Error;
 
+mod history;
+use history::{CmdHistory, HistHandling};
+
 #[allow(dead_code)]
 enum KindofCmd {
     Builtin(Builtins),
@@ -55,80 +58,8 @@ impl FromStr for Builtins {
     }
 }
 
-struct CmdHistory {
-    data: Vec<String>,
-    line_written_to_file: Option<usize>,
-}
-
-trait HistHandling {
-    fn show(&self);
-    fn show_last(&self, num_entry_toshow: usize);
-    fn read_in(&mut self, path: &str) -> Result<usize, io::Error>;
-    fn write_to(&mut self, path: &str);
-    fn append_to(&mut self, path: &str);
-    fn get_from_latest(&self, entry_num: usize) -> Option<String>;
-}
-
-impl HistHandling for CmdHistory {
-    fn show(&self) {
-        self.show_last(self.data.len());
-    }
-
-    fn show_last(&self, no_entry_toshow: usize) {
-        let from_index = self.data.len() - no_entry_toshow;
-        for (current_index, entry) in self.data[from_index..].iter().enumerate() {
-            println!("{:>5} {}", current_index + 1 + from_index, entry);
-        }
-    }
-
-    fn write_to(&mut self, path: &str) {
-        let history_str = self.data.join("\n") + "\n";
-        fs::write(path, history_str).expect("Failed to write to history file!");
-        self.line_written_to_file = Some(self.data.len() - 1)
-    }
-
-    fn append_to(&mut self, path: &str) {
-        let write_from = match self.line_written_to_file {
-            None => 0,
-            Some(n) => n + 1,
-        };
-        let history_str = self.data[write_from..].join("\n") + "\n";
-        let mut f = File::options()
-            .append(true)
-            .open(path)
-            .expect("Failed to open history file!");
-        write!(&mut f, "{}", history_str).expect("Failed to append to history file!");
-        self.line_written_to_file = Some(self.data.len() - 1)
-    }
-
-    fn read_in(&mut self, path: &str) -> Result<usize, io::Error> {
-        //Don't append an empty file
-        let metadata = fs::metadata(path)?;
-        if metadata.len() == 0 {
-            return Err(Error::new(io::ErrorKind::Other, "File is empty"));
-        }
-
-        let mut history_file_content: Vec<String> = fs::read_to_string(path)?
-            .trim()
-            .split("\n")
-            .map(|s| s.to_owned())
-            .collect();
-        self.data.append(&mut history_file_content);
-        Ok(self.data.len())
-    }
-
-    fn get_from_latest(&self, entry_num: usize) -> Option<String> {
-        if (self.data.len() as i64 - entry_num as i64 - 1) < 0 {
-            return None;
-        }
-        let from_index = self.data.len() - entry_num - 1;
-        Some(self.data[from_index].to_string())
-        //TODO: Implement None if i is to high
-    }
-}
-
 fn main() {
-    let mut cmd_history = create_init_cmd_history();
+    let mut cmd_history = CmdHistory::init();
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
@@ -152,7 +83,7 @@ fn main() {
     }
 }
 
-fn create_init_cmd_history() -> CmdHistory {
+/*fn create_init_cmd_history() -> CmdHistory {
     let mut cmd_history = CmdHistory {
         data: Vec::new(),
         line_written_to_file: None,
@@ -164,7 +95,7 @@ fn create_init_cmd_history() -> CmdHistory {
         }
     };
     cmd_history
-}
+}*/
 
 trait HandleKeyEnvent: Write {
     fn show_char(&mut self, char: &char);
@@ -218,15 +149,6 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
                     stdout.write_str_to_current_line(&cmd_string);
-                    /*stdout.flush().unwrap();
-                    _ = write!(
-                        stdout,
-                        "{}{}$ {}",
-                        clear::CurrentLine,
-                        cursor::Left(999), //this in error-prone, but stdout.cursor_pos() doesn't work in codecrafter test env
-                        cmd_string
-                    );*/
-                    //stdout.flush().unwrap();
                     user_input.clear();
                     user_input += &cmd_string[..];
                     last_cmd_counter += 1;
@@ -235,19 +157,10 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             Event::Key(Key::Backspace) => {
                 user_input.pop();
                 stdout.del_lastchar();
-                /*if let Ok((col, _)) = stdout.cursor_pos() {
-                    if col <= 3 {
-                        continue; //Dont delete the Prompt on Screen
-                    }
-                }
-                _ = write!(stdout, "\x08{}", clear::AfterCursor);
-                stdout.flush().unwrap();*/
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
                 stdout.show_char(&char);
-                //_ = write!(stdout, "{}", char,);
-                //stdout.flush().unwrap()
             }
             _ => continue,
         }
