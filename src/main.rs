@@ -168,12 +168,34 @@ fn create_init_cmd_history() -> CmdHistory {
 
 trait HandleKeyEnvent: Write {
     fn show_char(&mut self, char: &char);
+    fn del_lastchar(&mut self);
+    fn write_str_to_current_line(&mut self, line: &str);
 }
 
-impl<W: Write> HandleKeyEnvent for W {
+impl HandleKeyEnvent for RawTerminal<Stdout> {
     fn show_char(&mut self, char: &char) {
         _ = write!(self, "{}", char,);
         self.flush().unwrap()
+    }
+    fn del_lastchar(&mut self) {
+        if let Ok((col, _)) = self.cursor_pos() {
+            if col <= 3 {
+                return; //Dont delete the Prompt on Screen
+            }
+        }
+        _ = write!(self, "\x08{}", clear::AfterCursor);
+        self.flush().unwrap();
+    }
+    fn write_str_to_current_line(&mut self, line: &str) {
+        self.flush().unwrap();
+        _ = write!(
+            self,
+            "{}{}$ {}",
+            clear::CurrentLine,
+            cursor::Left(999), //this in error-prone, but stdout.cursor_pos() doesn't work in codecrafter test env
+            line
+        );
+        self.flush().unwrap();
     }
 }
 
@@ -195,15 +217,16 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
-                    stdout.flush().unwrap();
+                    stdout.write_str_to_current_line(&cmd_string);
+                    /*stdout.flush().unwrap();
                     _ = write!(
                         stdout,
                         "{}{}$ {}",
                         clear::CurrentLine,
                         cursor::Left(999), //this in error-prone, but stdout.cursor_pos() doesn't work in codecrafter test env
                         cmd_string
-                    );
-                    stdout.flush().unwrap();
+                    );*/
+                    //stdout.flush().unwrap();
                     user_input.clear();
                     user_input += &cmd_string[..];
                     last_cmd_counter += 1;
@@ -211,13 +234,14 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }
             Event::Key(Key::Backspace) => {
                 user_input.pop();
-                if let Ok((col, _)) = stdout.cursor_pos() {
+                stdout.del_lastchar();
+                /*if let Ok((col, _)) = stdout.cursor_pos() {
                     if col <= 3 {
                         continue; //Dont delete the Prompt on Screen
                     }
                 }
                 _ = write!(stdout, "\x08{}", clear::AfterCursor);
-                stdout.flush().unwrap();
+                stdout.flush().unwrap();*/
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
