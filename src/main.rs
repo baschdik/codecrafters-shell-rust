@@ -196,14 +196,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
                     user_input.clear();
                     user_input += &cmd_string[..];
-                    let (_, row) = stdout.cursor_pos().unwrap();
-                    _ = write!(
-                        stdout,
-                        "{}{}$ {}",
-                        clear::CurrentLine,
-                        Goto(0, row),
-                        cmd_string
-                    );
+                    _ = write!(stdout, "{}$ {}", clear::CurrentLine, cmd_string);
                     stdout.flush().unwrap();
                     last_cmd_counter += 1;
                 }
