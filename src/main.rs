@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, Error, Write, stdin, stdout};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
-use termion::cursor::{DetectCursorPos, Goto};
+use termion::cursor::DetectCursorPos;
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -179,37 +179,17 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
         match evt {
             Event::Key(Key::Char('\n')) => {
                 user_input.push('\n');
-                //let pos = stdout.cursor_pos();
-                //_ = write!(stdout, "{}", Goto(3, 3));
-                //_ = write!(stdout, "\n");
                 stdout.flush().unwrap();
                 break;
             }
-            /*Event::Key(Key::Left) => {
-                let (col, row) = stdout.cursor_pos().unwrap();
-                if col <= 3 {
-                    continue; //Dont delete the Prompt on Screen
-                }
-                _ = write!(stdout, "{}", Goto(col - 1, row))
-            }*/
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
-                    /*stdout.flush().unwrap();
-                    _ = write!(stdout, "{}{}", clear::CurrentLine, cursor::Left(999));
-                    stdout.suspend_raw_mode();
-                    user_input.clear();
-                    user_input += &cmd_string[..];
-                    print!("$ {}", cmd_string);
-                    //_ = write!(stdout, "{}$ {}", clear::CurrentLine, cmd_string);
-                    stdout.flush().unwrap();
-                    last_cmd_counter += 1;
-                    stdout.activate_raw_mode(); */
                     stdout.flush().unwrap();
                     _ = write!(
                         stdout,
                         "{}{}$ {}",
                         clear::CurrentLine,
-                        cursor::Left(999),
+                        cursor::Left(999), //this in error-prone, but stdout.cursor_pos() doesn't work in codecrafter test env
                         cmd_string
                     );
                     stdout.flush().unwrap();
@@ -218,14 +198,16 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                     last_cmd_counter += 1;
                 }
             }
-            /*Event::Key(Key::Backspace) => {
+            Event::Key(Key::Backspace) => {
                 user_input.pop();
-                let (col, row) = stdout.cursor_pos().unwrap();
-                if col <= 3 {
-                    continue; //Dont delete the Prompt on Screen
+                if let Ok((col, _)) = stdout.cursor_pos() {
+                    if col <= 3 {
+                        continue; //Dont delete the Prompt on Screen
+                    }
                 }
-                _ = write!(stdout, "{}{}", Goto(col - 1, row), clear::AfterCursor,)
-            } */
+                _ = write!(stdout, "\x08{}", clear::AfterCursor);
+                stdout.flush().unwrap();
+            }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
                 _ = write!(stdout, "{}", char,);
@@ -235,7 +217,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
         }
     }
 
-    stdout.suspend_raw_mode();
+    stdout.suspend_raw_mode().unwrap();
     println!("");
 
     user_input = user_input.trim().to_string();
