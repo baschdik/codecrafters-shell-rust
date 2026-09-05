@@ -3,11 +3,11 @@ use std::fs::File;
 use std::io::{self, Error, Write, stdin, stdout};
 use std::{env, fs};
 use std::{env::var, path::PathBuf, process::Command, str::FromStr};
-use termion::clear;
 use termion::cursor::{DetectCursorPos, Goto};
 use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use termion::{clear, cursor};
 use thiserror::Error;
 
 #[allow(dead_code)]
@@ -132,7 +132,7 @@ fn main() {
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
-        println!("");
+
         if user_input_split.len() == 0 {
             continue;
         }
@@ -194,11 +194,16 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }*/
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
+                    stdout.flush().unwrap();
+                    _ = write!(stdout, "{}{}", clear::CurrentLine, cursor::Left(999));
+                    stdout.suspend_raw_mode();
                     user_input.clear();
                     user_input += &cmd_string[..];
-                    _ = write!(stdout, "{}$ {}", clear::CurrentLine, cmd_string);
+                    print!("$ {}", cmd_string);
+                    //_ = write!(stdout, "{}$ {}", clear::CurrentLine, cmd_string);
                     stdout.flush().unwrap();
                     last_cmd_counter += 1;
+                    stdout.activate_raw_mode();
                 }
             }
             /*Event::Key(Key::Backspace) => {
@@ -217,6 +222,9 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             _ => continue,
         }
     }
+
+    stdout.suspend_raw_mode();
+    println!("");
 
     user_input = user_input.trim().to_string();
     cmd_history.data.push(user_input.to_owned());
