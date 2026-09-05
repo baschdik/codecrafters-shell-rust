@@ -132,6 +132,7 @@ fn main() {
 
     loop {
         let user_input_split = get_userinput(&mut cmd_history);
+        println!("");
         if user_input_split.len() == 0 {
             continue;
         }
@@ -178,21 +179,19 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
         match evt {
             Event::Key(Key::Char('\n')) => {
                 user_input.push('\n');
-                let pos = stdout.cursor_pos();
-                match pos {
-                    Ok((_, row)) => _ = write!(stdout, "{}", Goto(0, row + 1)),
-                    Err(_) => _ = write!(stdout, "{}", Goto(0, 3)),
-                }
+                //let pos = stdout.cursor_pos();
+                //_ = write!(stdout, "{}", Goto(3, 3));
+                //_ = write!(stdout, "\n");
                 stdout.flush().unwrap();
                 break;
             }
-            Event::Key(Key::Left) => {
+            /*Event::Key(Key::Left) => {
                 let (col, row) = stdout.cursor_pos().unwrap();
                 if col <= 3 {
                     continue; //Dont delete the Prompt on Screen
                 }
                 _ = write!(stdout, "{}", Goto(col - 1, row))
-            }
+            }*/
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
                     user_input.clear();
@@ -209,14 +208,14 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                     last_cmd_counter += 1;
                 }
             }
-            Event::Key(Key::Backspace) => {
+            /*Event::Key(Key::Backspace) => {
                 user_input.pop();
                 let (col, row) = stdout.cursor_pos().unwrap();
                 if col <= 3 {
                     continue; //Dont delete the Prompt on Screen
                 }
                 _ = write!(stdout, "{}{}", Goto(col - 1, row), clear::AfterCursor,)
-            }
+            } */
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
                 _ = write!(stdout, "{}", char,);
