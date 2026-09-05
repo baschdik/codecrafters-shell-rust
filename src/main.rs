@@ -181,7 +181,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 let pos = stdout.cursor_pos();
                 match pos {
                     Ok((_, row)) => _ = write!(stdout, "{}", Goto(0, row + 1)),
-                    Err(_) => _ = write!(stdout, "{}", Goto(1, 3)),
+                    Err(_) => _ = write!(stdout, "{}", Goto(0, 3)),
                 }
                 stdout.flush().unwrap();
                 break;
