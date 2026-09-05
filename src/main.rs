@@ -194,7 +194,7 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }*/
             Event::Key(Key::Up) => {
                 if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
-                    stdout.flush().unwrap();
+                    /*stdout.flush().unwrap();
                     _ = write!(stdout, "{}{}", clear::CurrentLine, cursor::Left(999));
                     stdout.suspend_raw_mode();
                     user_input.clear();
@@ -203,7 +203,19 @@ fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                     //_ = write!(stdout, "{}$ {}", clear::CurrentLine, cmd_string);
                     stdout.flush().unwrap();
                     last_cmd_counter += 1;
-                    stdout.activate_raw_mode();
+                    stdout.activate_raw_mode(); */
+                    stdout.flush().unwrap();
+                    _ = write!(
+                        stdout,
+                        "{}{}$ {}",
+                        clear::CurrentLine,
+                        cursor::Left(999),
+                        cmd_string
+                    );
+                    stdout.flush().unwrap();
+                    user_input.clear();
+                    user_input += &cmd_string[..];
+                    last_cmd_counter += 1;
                 }
             }
             /*Event::Key(Key::Backspace) => {
