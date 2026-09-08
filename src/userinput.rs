@@ -155,15 +155,23 @@ fn do_tab_completion(
     //DEBUG Enable
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    println!("  matches {:?} with len {}", matches, matches.len());
+    //println!("  matches {:?} with len {}", matches, matches.len());
     match matches.len() {
-        0 => stdout.write_char(&'\x07'), //Ring the bell,
-        1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
+        0 => {
+            stdout.write_char(&'\x07'); //Ring the bell,
+            println!("on path 0")
+        }
+        1 => {
+            println!("on path 1");
+            return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+        }
         _ if first_tab_pressed == &false => {
+            println!("on path _ and ringing");
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
         }
         _ => {
+            println!("on path _ and writing");
             println!("");
             for ele in matches {
                 print!("{} ", ele)
