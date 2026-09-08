@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::Command, str::FromStr};
 
 mod history;
-use history::{CmdHistory, HistHandling};
+use crate::history::HistHandling;
 
 mod builtin;
 use builtin::*;
@@ -32,7 +32,7 @@ impl FromStr for KindofCmd {
 }
 
 fn main() {
-    let mut cmd_history = CmdHistory::init();
+    let mut cmd_history = history::CmdHistory::init();
 
     loop {
         let user_input_split = handle_userinput(&mut cmd_history);
@@ -43,14 +43,7 @@ fn main() {
         let command = user_input_split[0].parse::<KindofCmd>();
         match command {
             Err(_) => println!("{}: command not found", &user_input_split[0]),
-            Ok(KindofCmd::Builtin(cmd)) => match cmd {
-                Builtins::Echo => builtin_echo(user_input_split),
-                Builtins::Exit => builtin_exit(&mut cmd_history),
-                Builtins::Type => builtin_type(user_input_split),
-                Builtins::Pwd => builtin_pwd(),
-                Builtins::Cd => builtin_cd(user_input_split),
-                Builtins::History => builtin_history(user_input_split, &mut cmd_history),
-            },
+            Ok(KindofCmd::Builtin(cmd)) => cmd.execute_cmd(user_input_split, &mut cmd_history),
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
     }

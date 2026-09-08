@@ -15,7 +15,7 @@ pub trait HistHandling {
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error>;
     fn write_to(&mut self, path: &str);
     fn append_to(&mut self, path: &str);
-    fn get_from_latest(&self, entry_num: usize) -> Option<String>;
+    fn get_latest(&self, entry_num: usize) -> Option<String>;
     fn init() -> CmdHistory;
 }
 
@@ -67,7 +67,7 @@ impl HistHandling for CmdHistory {
         Ok(self.data.len())
     }
 
-    fn get_from_latest(&self, entry_num: usize) -> Option<String> {
+    fn get_latest(&self, entry_num: usize) -> Option<String> {
         if (self.data.len() as i64 - entry_num as i64 - 1) < 0 {
             return None;
         }

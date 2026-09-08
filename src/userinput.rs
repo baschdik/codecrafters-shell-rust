@@ -5,6 +5,9 @@ use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
 
+use crate::KindofCmd::Builtin;
+use crate::builtin::Builtins;
+
 use super::history::{CmdHistory, HistHandling};
 
 trait HandleKeyEnvent: Write {
@@ -47,7 +50,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     stdout.flush().unwrap();
 
     let mut user_input = String::new();
-    let mut last_cmd_counter = 0;
+    let mut which_history_entry = 0;
     let mut history_search_down = false;
     // TODO: Update the whole history / up / down logic
     for evt in stdin.events() {
@@ -59,26 +62,30 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 break;
             }
             Event::Key(Key::Up) => {
-                if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
+                if let Some(cmd_string) = cmd_history.get_latest(which_history_entry) {
                     stdout.write_str_to_current_line(&cmd_string);
                     user_input.clear();
                     user_input += &cmd_string[..];
-                    last_cmd_counter += 1;
+                    which_history_entry += 1;
                     history_search_down = false;
                 }
             }
             Event::Key(Key::Down) => {
                 if !history_search_down {
-                    last_cmd_counter = last_cmd_counter.checked_sub(1).unwrap_or_default();
+                    which_history_entry = which_history_entry.checked_sub(1).unwrap_or_default();
                     history_search_down = true;
                 }
-                last_cmd_counter = last_cmd_counter.checked_sub(1).unwrap_or_default();
+                which_history_entry = which_history_entry.checked_sub(1).unwrap_or_default();
 
-                if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
+                if let Some(cmd_string) = cmd_history.get_latest(which_history_entry) {
                     stdout.write_str_to_current_line(&cmd_string);
                     user_input.clear();
                     user_input += &cmd_string[..];
                 }
+            }
+            Event::Key(Key::Char('\t')) => {
+                user_input = do_tab_completion(user_input);
+                stdout.write_str_to_current_line(&user_input);
             }
             Event::Key(Key::Backspace) => {
                 user_input.pop();
@@ -99,4 +106,21 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     cmd_history.data.push(user_input.to_owned());
 
     user_input.split_whitespace().map(String::from).collect()
+}
+
+fn do_tab_completion(mut user_input: String) -> String {
+    let last_word = match user_input.split_whitespace().last() {
+        Some(x) => x,
+        None => return user_input,
+    };
+
+    let matches: Vec<String> = Builtins::all_cmd_names()
+        .into_iter()
+        .filter(|cmd| cmd.starts_with(last_word))
+        .collect();
+    if !matches.is_empty() {
+        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
+        user_input.push_str(&matches[0]);
+    }
+    user_input
 }
