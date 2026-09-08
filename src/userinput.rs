@@ -11,13 +11,13 @@ use crate::builtin::Builtins;
 use super::history::{CmdHistory, HistHandling};
 
 trait HandleKeyEnvent: Write {
-    fn show_char(&mut self, char: &char);
+    fn write_char(&mut self, char: &char);
     fn del_lastchar(&mut self);
     fn write_str_to_current_line(&mut self, line: &str);
 }
 
 impl HandleKeyEnvent for RawTerminal<Stdout> {
-    fn show_char(&mut self, char: &char) {
+    fn write_char(&mut self, char: &char) {
         _ = write!(self, "{}", char,);
         self.flush().unwrap()
     }
@@ -84,7 +84,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 }
             }
             Event::Key(Key::Char('\t')) => {
-                user_input = do_tab_completion(user_input);
+                user_input = do_tab_completion(user_input, &mut stdout);
                 stdout.write_str_to_current_line(&user_input);
             }
             Event::Key(Key::Backspace) => {
@@ -93,7 +93,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
-                stdout.show_char(&char);
+                stdout.write_char(&char);
             }
             _ => continue,
         }
@@ -108,7 +108,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     user_input.split_whitespace().map(String::from).collect()
 }
 
-fn do_tab_completion(mut user_input: String) -> String {
+fn do_tab_completion(mut user_input: String, stdout: &mut RawTerminal<Stdout>) -> String {
     let last_word = match user_input.split_whitespace().last() {
         Some(x) => x,
         None => return user_input,
@@ -121,6 +121,8 @@ fn do_tab_completion(mut user_input: String) -> String {
         user_input = user_input.strip_suffix(last_word).unwrap().to_string();
         user_input.push_str(&matches[0]);
         user_input.push(' ');
+    } else {
+        stdout.write_char(&'\x07');
     }
     user_input
 }
