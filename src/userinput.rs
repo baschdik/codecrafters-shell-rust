@@ -171,8 +171,8 @@ fn do_tab_completion(
             *first_tab_pressed = true;
         }
         _ if first_tab_pressed == &true => {
-            println!("on path _ and writing");
-            println!("");
+            println!("xyz_ant  xyz_bee  xyz_fox");
+            //println!("");
             for ele in matches {
                 print!("{} ", ele)
             }
