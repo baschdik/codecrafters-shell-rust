@@ -129,9 +129,13 @@ fn do_tab_completion(
     where
         H: IntoIterator<Item = String>,
     {
-        hey.into_iter()
+        let v = hey
+            .into_iter()
             .filter(|cmd| cmd.starts_with(to_match))
-            .collect()
+            .collect();
+
+        print!("vektor: {:?}", v);
+        v
     }
 
     let last_word = match user_input.split_whitespace().last() {
@@ -139,19 +143,24 @@ fn do_tab_completion(
         None => return user_input,
     };
 
-    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
+    println!("user input {}", user_input);
+    println!("last word: {}", last_word); //DEBUG
+
+    /*let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
         return replace_userinput_w_match(user_input, &last_word, &matches[0]);
-    }
+    }*/
+    //DEBUG Enable
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
     match matches.len() {
         0 => stdout.write_char(&'\x07'), //Ring the bell,
         1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
-        _ if first_tab_pressed == &false => {
+        /*_ if first_tab_pressed == &false => {
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
-        }
+        }*/
+        //_ => stdout.write_str_to_current_line(&matches.join(" ")),
         _ => stdout.write_str_to_current_line(&matches.join(" ")),
     }
 
