@@ -173,7 +173,7 @@ fn do_tab_completion(
         _ => {
             match tabstatus {
                 TabStatus::Ring => {
-                    println!("Ring the bell");
+                    stdout.write_char(&'\x07'); //Ring the bell;
                     *tabstatus = TabStatus::Print
                 }
                 TabStatus::Print => {
