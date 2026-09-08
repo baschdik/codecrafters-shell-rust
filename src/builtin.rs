@@ -4,8 +4,9 @@ use std::{env::var, str::FromStr};
 use strum::{EnumIter, IntoEnumIterator};
 use thiserror::Error;
 
-use crate::misc;
-use crate::{builtin, history::*};
+use crate::history;
+use crate::history::HistHandling;
+use crate::path;
 
 #[derive(Debug, EnumIter)]
 pub enum Builtins {
@@ -53,7 +54,7 @@ impl Builtins {
         names
     }
 
-    pub fn execute_cmd(self, user_str: Vec<String>, cmd_history: &mut CmdHistory) {
+    pub fn execute_cmd(self, user_str: Vec<String>, cmd_history: &mut history::CmdHistory) {
         match self {
             Builtins::Echo => builtin_echo(user_str),
             Builtins::Exit => builtin_exit(cmd_history),
@@ -86,14 +87,14 @@ pub fn builtin_echo(user_str: Vec<String>) {
     println!()
 }
 
-pub fn builtin_exit(cmd_history: &mut CmdHistory) {
+pub fn builtin_exit(cmd_history: &mut history::CmdHistory) {
     if let Ok(histfile) = var("HISTFILE") {
         cmd_history.write_to(&histfile);
     }
     std::process::exit(0)
 }
 
-pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut CmdHistory) {
+pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHistory) {
     match HistoryArgs::new(user_str) {
         Err(e) => {
             println!("{}", e);
@@ -177,7 +178,7 @@ pub fn builtin_type(str_split: Vec<String>) {
         println!("{} is a shell builtin", &str_split[1]);
         return;
     }
-    match misc::get_cmd_from_path(&str_split[1]) {
+    match path::get_cmd_from_path(&str_split[1]) {
         Some(path) => println!("{} is {}", str_split[1], path.display()),
         None => println!("{}: not found", str_split[1]),
     }

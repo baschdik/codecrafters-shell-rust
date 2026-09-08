@@ -9,7 +9,7 @@ use builtin::*;
 mod userinput;
 use userinput::handle_userinput;
 
-mod misc;
+mod path;
 
 #[allow(dead_code)]
 enum KindofCmd {
@@ -24,7 +24,7 @@ impl FromStr for KindofCmd {
         if let Ok(builtin) = s.parse::<Builtins>() {
             return Ok(KindofCmd::Builtin(builtin));
         }
-        if let Some(path_buf) = misc::get_cmd_from_path(s) {
+        if let Some(path_buf) = path::get_cmd_from_path(s) {
             return Ok(KindofCmd::External(path_buf));
         }
         Err(())

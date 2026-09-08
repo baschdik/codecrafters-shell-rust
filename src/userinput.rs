@@ -5,11 +5,10 @@ use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
 
-use crate::KindofCmd::Builtin;
 use crate::builtin::Builtins;
-use crate::misc::all_cmd_in_path;
+use crate::path;
 
-use super::history::{CmdHistory, HistHandling};
+use crate::history::{CmdHistory, HistHandling};
 
 trait HandleKeyEnvent: Write {
     fn write_char(&mut self, char: &char);
@@ -109,40 +108,42 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     user_input.split_whitespace().map(String::from).collect()
 }
 
-fn do_tab_completion(mut user_input: String, stdout: &mut RawTerminal<Stdout>) -> String {
+fn do_tab_completion(user_input: String, stdout: &mut RawTerminal<Stdout>) -> String {
+    fn replace_userinput_w_match(
+        mut user_input: String,
+        last_word: &str,
+        the_match: &str,
+    ) -> String {
+        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
+        user_input.push_str(&the_match);
+        user_input.push(' ');
+        user_input
+    }
+
+    fn get_matches<H>(hey: H, to_match: &str) -> Vec<String>
+    where
+        H: IntoIterator<Item = String>,
+    {
+        hey.into_iter()
+            .filter(|cmd| cmd.starts_with(to_match))
+            .collect()
+    }
+
     let last_word = match user_input.split_whitespace().last() {
-        Some(x) => x,
+        Some(x) => x.to_owned(),
         None => return user_input,
     };
-    let matches: Vec<String> = Builtins::all_cmd_names()
-        .into_iter()
-        .filter(|cmd| cmd.starts_with(last_word))
-        .collect();
+
+    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
-        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
-        user_input.push_str(&matches[0]);
-        user_input.push(' ');
-        return user_input;
+        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
     }
 
-    let matches: Vec<String>;
-    if let Some(external_cmds) = all_cmd_in_path() {
-        matches = external_cmds
-            .into_iter()
-            .filter(|cmd| cmd.starts_with(last_word))
-            .collect();
-    } else {
-        matches = Vec::new();
+    let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
+    if !matches.is_empty() {
+        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
     }
 
-    //TODO: code double!
-    if !matches.is_empty() {
-        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
-        user_input.push_str(&matches[0]);
-        user_input.push(' ');
-        return user_input;
-    } else {
-        stdout.write_char(&'\x07'); //Ring the bell
-    }
+    stdout.write_char(&'\x07'); //Ring the bell
     user_input
 }
