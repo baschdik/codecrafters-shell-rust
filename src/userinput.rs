@@ -134,7 +134,7 @@ fn do_tab_completion(
             .filter(|cmd| cmd.starts_with(to_match))
             .collect();
 
-        print!("vektor: {:?}", v);
+        //print!("vektor: {:?}", v);
         v
     }
 
