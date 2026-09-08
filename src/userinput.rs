@@ -64,7 +64,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                     user_input.clear();
                     user_input += &cmd_string[..];
                     last_cmd_counter += 1;
-                    println!("-counter: {}", last_cmd_counter); //DEBUG
+                    //println!("-counter: {}", last_cmd_counter); //DEBUG
                     history_search_down = false;
                 }
             }
