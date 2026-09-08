@@ -177,7 +177,7 @@ fn do_tab_completion(
                 print!("{} ", ele)
             }
         }
-        _ => println("This is strange!"),
+        _ => println!("This is strange!"),
     }
 
     user_input
