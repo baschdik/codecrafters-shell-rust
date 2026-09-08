@@ -166,17 +166,18 @@ fn do_tab_completion(
             return replace_userinput_w_match(user_input, &last_word, &matches[0]);
         }
         _ if first_tab_pressed == &false => {
-            println!("on path _ and ringing");
+            //println!("on path _ and ringing");
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
         }
-        _ => {
+        _ if first_tab_pressed == &true => {
             println!("on path _ and writing");
             println!("");
             for ele in matches {
                 print!("{} ", ele)
             }
         }
+        _ => println("This is strange!"),
     }
 
     user_input
