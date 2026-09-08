@@ -40,7 +40,7 @@ impl HandleKeyEnvent for RawTerminal<Stdout> {
     }
 }
 
-pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
+pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -48,6 +48,8 @@ pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
 
     let mut user_input = String::new();
     let mut last_cmd_counter = 0;
+    let mut history_search_down = false;
+    // TODO: Update the whole history / up / down logic
     for evt in stdin.events() {
         let evt = evt.unwrap();
         match evt {
@@ -62,6 +64,21 @@ pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                     user_input.clear();
                     user_input += &cmd_string[..];
                     last_cmd_counter += 1;
+                    println!("-counter: {}", last_cmd_counter); //DEBUG
+                    history_search_down = false;
+                }
+            }
+            Event::Key(Key::Down) => {
+                if !history_search_down {
+                    last_cmd_counter = last_cmd_counter.checked_sub(1).unwrap_or_default();
+                    history_search_down = true;
+                }
+                last_cmd_counter = last_cmd_counter.checked_sub(1).unwrap_or_default();
+
+                if let Some(cmd_string) = cmd_history.get_from_latest(last_cmd_counter) {
+                    stdout.write_str_to_current_line(&cmd_string);
+                    user_input.clear();
+                    user_input += &cmd_string[..];
                 }
             }
             Event::Key(Key::Backspace) => {

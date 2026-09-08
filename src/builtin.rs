@@ -1,10 +1,9 @@
-use is_executable::is_executable;
 use std::env;
-use std::path::PathBuf;
 use std::{env::var, str::FromStr};
 use thiserror::Error;
 
 use crate::history::*;
+use crate::misc;
 
 pub enum Builtins {
     Echo,
@@ -143,20 +142,8 @@ pub fn builtin_type(str_split: Vec<String>) {
         println!("{} is a shell builtin", &str_split[1]);
         return;
     }
-    match get_cmd_from_path(&str_split[1]) {
+    match misc::get_cmd_from_path(&str_split[1]) {
         Some(path) => println!("{} is {}", str_split[1], path.display()),
         None => println!("{}: not found", str_split[1]),
     }
-}
-
-fn get_cmd_from_path(cmd: &str) -> Option<PathBuf> {
-    //TODO! Remove Code doublication from main.rs
-    let path = var("PATH").expect("No $PATH found.");
-    for entry in path.split(":") {
-        let full_cmd = entry.to_owned() + "/" + cmd;
-        if is_executable(&full_cmd) {
-            return Some(PathBuf::from(full_cmd));
-        }
-    }
-    None
 }

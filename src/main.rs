@@ -1,5 +1,4 @@
-use is_executable::is_executable;
-use std::{env::var, path::PathBuf, process::Command, str::FromStr};
+use std::{path::PathBuf, process::Command, str::FromStr};
 
 mod history;
 use history::{CmdHistory, HistHandling};
@@ -8,7 +7,9 @@ mod builtin;
 use builtin::*;
 
 mod userinput;
-use userinput::get_userinput;
+use userinput::handle_userinput;
+
+mod misc;
 
 #[allow(dead_code)]
 enum KindofCmd {
@@ -23,7 +24,7 @@ impl FromStr for KindofCmd {
         if let Ok(builtin) = s.parse::<Builtins>() {
             return Ok(KindofCmd::Builtin(builtin));
         }
-        if let Some(path_buf) = get_cmd_from_path(s) {
+        if let Some(path_buf) = misc::get_cmd_from_path(s) {
             return Ok(KindofCmd::External(path_buf));
         }
         Err(())
@@ -34,7 +35,7 @@ fn main() {
     let mut cmd_history = CmdHistory::init();
 
     loop {
-        let user_input_split = get_userinput(&mut cmd_history);
+        let user_input_split = handle_userinput(&mut cmd_history);
 
         if user_input_split.len() == 0 {
             continue;
@@ -53,17 +54,6 @@ fn main() {
             Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
         }
     }
-}
-
-fn get_cmd_from_path(cmd: &str) -> Option<PathBuf> {
-    let path = var("PATH").expect("No $PATH found.");
-    for entry in path.split(":") {
-        let full_cmd = entry.to_owned() + "/" + cmd;
-        if is_executable(&full_cmd) {
-            return Some(PathBuf::from(full_cmd));
-        }
-    }
-    None
 }
 
 fn run_external_cmd(args: Vec<String>) {
