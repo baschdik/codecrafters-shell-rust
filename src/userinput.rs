@@ -159,7 +159,7 @@ fn do_tab_completion(
     }*/
     //DEBUG Enable
 
-    let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
+    let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
     //println!("  matches {:?} with len {}", matches, matches.len());
     match matches.len() {
         0 => {
@@ -177,7 +177,8 @@ fn do_tab_completion(
                     *tabstatus = TabStatus::Print
                 }
                 TabStatus::Print => {
-                    let text = &matches.join(" ")[..];
+                    matches.sort();
+                    let text = &matches.join("  ")[..];
                     stdout.suspend_raw_mode();
                     println!("\n{}", text);
                     stdout.activate_raw_mode();
