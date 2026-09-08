@@ -136,7 +136,7 @@ fn do_tab_completion(
             .filter(|cmd| cmd.starts_with(to_match))
             .collect();
 
-        //print!("vektor: {:?}", v); //DEBUG
+        println!("vektor: {:?}", v); //DEBUG
         v
     }
 
@@ -166,7 +166,7 @@ fn do_tab_completion(
         _ => {
             println!("");
             for ele in matches {
-                print!("{}", ele)
+                print!("{} ", ele)
             }
         }
     }
