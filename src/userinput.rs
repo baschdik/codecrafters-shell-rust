@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::io::{Stdout, Write, stdin, stdout};
 use termion::cursor::DetectCursorPos;
 use termion::event::{Event, Key};
@@ -127,14 +128,15 @@ fn do_tab_completion(
 
     fn get_matches<H>(hey: H, to_match: &str) -> Vec<String>
     where
-        H: IntoIterator<Item = String>,
+        H: IntoIterator<Item = String> + Debug,
     {
+        //println!("hey: {:?}", hey); //DEBUG
         let v = hey
             .into_iter()
             .filter(|cmd| cmd.starts_with(to_match))
             .collect();
 
-        //print!("vektor: {:?}", v);
+        print!("vektor: {:?}", v); //DEBUG
         v
     }
 
@@ -157,10 +159,10 @@ fn do_tab_completion(
     match matches.len() {
         0 => stdout.write_char(&'\x07'), //Ring the bell,
         1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
-        _ if first_tab_pressed == &false => {
+        /*_ if first_tab_pressed == &false => {
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
-        }
+        }*/
         _ => stdout.write_str_to_current_line(&matches.join(" ")),
     }
 
