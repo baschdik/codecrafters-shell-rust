@@ -163,9 +163,8 @@ fn do_tab_completion(
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
         }
-        _ =>
-        //stdout.write_str_to_current_line(&matches.join(" ")),
-        {
+        _ => {
+            println!("");
             for ele in matches {
                 print!("{}", ele)
             }
@@ -174,3 +173,5 @@ fn do_tab_completion(
 
     user_input
 }
+
+//stdout.write_str_to_current_line(&matches.join(" ")),
