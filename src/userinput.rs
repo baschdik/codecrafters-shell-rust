@@ -136,7 +136,7 @@ fn do_tab_completion(
             .filter(|cmd| cmd.starts_with(to_match))
             .collect();
 
-        print!("vektor: {:?}", v); //DEBUG
+        //print!("vektor: {:?}", v); //DEBUG
         v
     }
 
@@ -155,7 +155,7 @@ fn do_tab_completion(
     //DEBUG Enable
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    println!("");
+    //println!("");
     match matches.len() {
         0 => stdout.write_char(&'\x07'), //Ring the bell,
         1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
@@ -163,7 +163,13 @@ fn do_tab_completion(
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
         }*/
-        _ => stdout.write_str_to_current_line(&matches.join(" ")),
+        _ =>
+        //stdout.write_str_to_current_line(&matches.join(" ")),
+        {
+            for ele in matches {
+                print!("{}", ele)
+            }
+        }
     }
 
     user_input
