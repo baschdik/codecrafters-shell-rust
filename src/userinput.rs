@@ -155,7 +155,7 @@ fn do_tab_completion(
     //DEBUG Enable
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    println!("matches {:?}", matches);
+    println!("  matches {:?} with len {}", matches, matches.len());
     match matches.len() {
         0 => stdout.write_char(&'\x07'), //Ring the bell,
         1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
