@@ -7,6 +7,7 @@ use termion::{clear, cursor};
 
 use crate::KindofCmd::Builtin;
 use crate::builtin::Builtins;
+use crate::misc::all_cmd_in_path;
 
 use super::history::{CmdHistory, HistHandling};
 
@@ -121,8 +122,27 @@ fn do_tab_completion(mut user_input: String, stdout: &mut RawTerminal<Stdout>) -
         user_input = user_input.strip_suffix(last_word).unwrap().to_string();
         user_input.push_str(&matches[0]);
         user_input.push(' ');
+        return user_input;
+    }
+
+    let matches: Vec<String>;
+    if let Some(external_cmds) = all_cmd_in_path() {
+        matches = external_cmds
+            .into_iter()
+            .filter(|cmd| cmd.starts_with(last_word))
+            .collect();
     } else {
-        stdout.write_char(&'\x07');
+        matches = Vec::new();
+    }
+
+    //TODO: code double!
+    if !matches.is_empty() {
+        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
+        user_input.push_str(&matches[0]);
+        user_input.push(' ');
+        return user_input;
+    } else {
+        stdout.write_char(&'\x07'); //Ring the bell
     }
     user_input
 }
