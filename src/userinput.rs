@@ -113,7 +113,6 @@ fn do_tab_completion(mut user_input: String) -> String {
         Some(x) => x,
         None => return user_input,
     };
-
     let matches: Vec<String> = Builtins::all_cmd_names()
         .into_iter()
         .filter(|cmd| cmd.starts_with(last_word))
@@ -121,6 +120,7 @@ fn do_tab_completion(mut user_input: String) -> String {
     if !matches.is_empty() {
         user_input = user_input.strip_suffix(last_word).unwrap().to_string();
         user_input.push_str(&matches[0]);
+        user_input.push(' ');
     }
     user_input
 }
