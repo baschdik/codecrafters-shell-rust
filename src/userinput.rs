@@ -148,10 +148,10 @@ fn do_tab_completion(
     //println!("user input {}", user_input);
     //println!("last word: {}", last_word); //DEBUG
 
-    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
+    /*let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
         return replace_userinput_w_match(user_input, &last_word, &matches[0]);
-    }
+    }*/
     //DEBUG Enable
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
