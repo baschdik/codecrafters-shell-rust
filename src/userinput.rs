@@ -44,6 +44,11 @@ impl HandleKeyEnvent for RawTerminal<Stdout> {
     }
 }
 
+enum TabStatus {
+    Ring,
+    Print,
+}
+
 pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
     let stdin = stdin();
@@ -53,7 +58,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     let mut user_input = String::new();
     let mut which_history_entry = 0;
     let mut history_search_down = false;
-    let mut first_tab_press = false;
+    let mut tabstatus = TabStatus::Ring;
     // TODO: Update the whole history / up / down logic
     for evt in stdin.events() {
         let evt = evt.unwrap();
@@ -86,7 +91,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 }
             }
             Event::Key(Key::Char('\t')) => {
-                user_input = do_tab_completion(user_input, &mut stdout, &mut first_tab_press);
+                user_input = do_tab_completion(user_input, &mut stdout, &mut tabstatus);
                 stdout.write_str_to_current_line(&user_input);
             }
             Event::Key(Key::Backspace) => {
@@ -113,7 +118,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
 fn do_tab_completion(
     user_input: String,
     stdout: &mut RawTerminal<Stdout>,
-    first_tab_pressed: &mut bool,
+    tabstatus: &mut TabStatus,
 ) -> String {
     fn replace_userinput_w_match(
         mut user_input: String,
@@ -159,25 +164,27 @@ fn do_tab_completion(
     match matches.len() {
         0 => {
             stdout.write_char(&'\x07'); //Ring the bell,
-            println!("on path 0")
+            //println!("on path 0")
         }
         1 => {
-            println!("on path 1");
+            //println!("on path 1");
             return replace_userinput_w_match(user_input, &last_word, &matches[0]);
         }
-        _ if first_tab_pressed == &false => {
-            //println!("on path _ and ringing");
-            stdout.write_char(&'\x07'); //Ring the bell
-            *first_tab_pressed = true;
+        _ => {
+            match tabstatus {
+                TabStatus::Ring => {
+                    println!("Ring the bell");
+                    *tabstatus = TabStatus::Print
+                }
+                TabStatus::Print => {
+                    let text = &matches.join(" ")[..];
+                    stdout.suspend_raw_mode();
+                    println!("\n{}", text);
+                    stdout.activate_raw_mode();
+                    *tabstatus = TabStatus::Ring
+                }
+            };
         }
-        _ if first_tab_pressed == &true => {
-            println!("xyz_ant  xyz_bee  xyz_fox");
-            //println!("");
-            for ele in matches {
-                print!("{} ", ele)
-            }
-        }
-        _ => println!("This is strange!"),
     }
 
     user_input
