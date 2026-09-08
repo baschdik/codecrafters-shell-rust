@@ -52,6 +52,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     let mut user_input = String::new();
     let mut which_history_entry = 0;
     let mut history_search_down = false;
+    let mut first_tab_press = false;
     // TODO: Update the whole history / up / down logic
     for evt in stdin.events() {
         let evt = evt.unwrap();
@@ -84,7 +85,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 }
             }
             Event::Key(Key::Char('\t')) => {
-                user_input = do_tab_completion(user_input, &mut stdout);
+                user_input = do_tab_completion(user_input, &mut stdout, &mut first_tab_press);
                 stdout.write_str_to_current_line(&user_input);
             }
             Event::Key(Key::Backspace) => {
@@ -108,7 +109,11 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     user_input.split_whitespace().map(String::from).collect()
 }
 
-fn do_tab_completion(user_input: String, stdout: &mut RawTerminal<Stdout>) -> String {
+fn do_tab_completion(
+    user_input: String,
+    stdout: &mut RawTerminal<Stdout>,
+    first_tab_pressed: &mut bool,
+) -> String {
     fn replace_userinput_w_match(
         mut user_input: String,
         last_word: &str,
@@ -140,10 +145,15 @@ fn do_tab_completion(user_input: String, stdout: &mut RawTerminal<Stdout>) -> St
     }
 
     let matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    if !matches.is_empty() {
-        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+    match matches.len() {
+        0 => stdout.write_char(&'\x07'), //Ring the bell,
+        1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
+        _ if first_tab_pressed == &false => {
+            stdout.write_char(&'\x07'); //Ring the bell
+            *first_tab_pressed = true;
+        }
+        _ => stdout.write_str_to_current_line(&matches.join(" ")),
     }
 
-    stdout.write_char(&'\x07'); //Ring the bell
     user_input
 }
