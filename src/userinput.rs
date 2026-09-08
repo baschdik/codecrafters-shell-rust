@@ -159,10 +159,10 @@ fn do_tab_completion(
     match matches.len() {
         0 => stdout.write_char(&'\x07'), //Ring the bell,
         1 => return replace_userinput_w_match(user_input, &last_word, &matches[0]),
-        /*_ if first_tab_pressed == &false => {
+        _ if first_tab_pressed == &false => {
             stdout.write_char(&'\x07'); //Ring the bell
             *first_tab_pressed = true;
-        }*/
+        }
         _ =>
         //stdout.write_str_to_current_line(&matches.join(" ")),
         {
