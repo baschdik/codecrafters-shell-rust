@@ -49,6 +49,71 @@ enum TabStatus {
     Print,
 }
 
+fn tab_completion(
+    user_input: String,
+    stdout: &mut RawTerminal<Stdout>,
+    tabstatus: &mut TabStatus,
+) -> String {
+    fn get_matches<H>(hey: H, to_match: &str) -> Vec<String>
+    where
+        H: IntoIterator<Item = String> + Debug,
+    {
+        hey.into_iter()
+            .filter(|cmd| cmd.starts_with(to_match))
+            .collect()
+    }
+
+    fn replace_userinput_w_match(
+        mut user_input: String,
+        last_word: &str,
+        the_match: &str,
+    ) -> String {
+        if let Some(stripped) = user_input.strip_suffix(last_word) {
+            user_input = stripped.to_string();
+            user_input.push_str(&the_match);
+            user_input.push(' ');
+        }
+        user_input
+    }
+
+    let last_word = match user_input.split_whitespace().last() {
+        Some(x) => x.to_owned(),
+        None => return user_input,
+    };
+
+    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
+    if !matches.is_empty() {
+        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+    }
+
+    let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
+    match matches.len() {
+        0 => {
+            stdout.write_char(&'\x07'); //Ring the bell,
+        }
+        1 => {
+            return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+        }
+        _ => {
+            match tabstatus {
+                TabStatus::Ring => {
+                    stdout.write_char(&'\x07'); //Ring the bell;
+                    *tabstatus = TabStatus::Print
+                }
+                TabStatus::Print => {
+                    matches.sort();
+                    let text = &matches.join("  ")[..];
+                    _ = stdout.suspend_raw_mode();
+                    println!("\n{}", text);
+                    _ = stdout.activate_raw_mode();
+                }
+            };
+        }
+    }
+
+    user_input
+}
+
 pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
     let stdin = stdin();
@@ -91,7 +156,7 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
                 }
             }
             Event::Key(Key::Char('\t')) => {
-                user_input = do_tab_completion(user_input, &mut stdout, &mut tabstatus);
+                user_input = tab_completion(user_input, &mut stdout, &mut tabstatus);
                 stdout.write_str_to_current_line(&user_input);
             }
             Event::Key(Key::Backspace) => {
@@ -113,70 +178,4 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     cmd_history.data.push(user_input.to_owned());
 
     user_input.split_whitespace().map(String::from).collect()
-}
-
-fn do_tab_completion(
-    user_input: String,
-    stdout: &mut RawTerminal<Stdout>,
-    tabstatus: &mut TabStatus,
-) -> String {
-    fn replace_userinput_w_match(
-        mut user_input: String,
-        last_word: &str,
-        the_match: &str,
-    ) -> String {
-        if let Some(stripped) = user_input.strip_suffix(last_word) {
-            user_input = stripped.to_string();
-            user_input.push_str(&the_match);
-            user_input.push(' ');
-        }
-        user_input
-    }
-
-    fn get_matches<H>(hey: H, to_match: &str) -> Vec<String>
-    where
-        H: IntoIterator<Item = String> + Debug,
-    {
-        hey.into_iter()
-            .filter(|cmd| cmd.starts_with(to_match))
-            .collect()
-    }
-
-    let last_word = match user_input.split_whitespace().last() {
-        Some(x) => x.to_owned(),
-        None => return user_input,
-    };
-
-    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
-    if !matches.is_empty() {
-        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
-    }
-
-    let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    match matches.len() {
-        0 => {
-            stdout.write_char(&'\x07'); //Ring the bell,
-        }
-        1 => {
-            return replace_userinput_w_match(user_input, &last_word, &matches[0]);
-        }
-        _ => {
-            match tabstatus {
-                TabStatus::Ring => {
-                    stdout.write_char(&'\x07'); //Ring the bell;
-                    *tabstatus = TabStatus::Print
-                }
-                TabStatus::Print => {
-                    matches.sort();
-                    let text = &matches.join("  ")[..];
-                    _ = stdout.suspend_raw_mode();
-                    println!("\n{}", text);
-                    _ = stdout.activate_raw_mode();
-                    //*tabstatus = TabStatus::Ring
-                }
-            };
-        }
-    }
-
-    user_input
 }
