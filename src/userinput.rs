@@ -125,9 +125,11 @@ fn do_tab_completion(
         last_word: &str,
         the_match: &str,
     ) -> String {
-        user_input = user_input.strip_suffix(last_word).unwrap().to_string();
-        user_input.push_str(&the_match);
-        user_input.push(' ');
+        if let Some(stripped) = user_input.strip_suffix(last_word) {
+            user_input = stripped.to_string();
+            user_input.push_str(&the_match);
+            user_input.push(' ');
+        }
         user_input
     }
 
@@ -135,14 +137,9 @@ fn do_tab_completion(
     where
         H: IntoIterator<Item = String> + Debug,
     {
-        //println!("hey: {:?}", hey); //DEBUG
-        let v = hey
-            .into_iter()
+        hey.into_iter()
             .filter(|cmd| cmd.starts_with(to_match))
-            .collect();
-
-        //println!(" vektor: {:?}", v); //DEBUG
-        v
+            .collect()
     }
 
     let last_word = match user_input.split_whitespace().last() {
@@ -175,7 +172,7 @@ fn do_tab_completion(
                     _ = stdout.suspend_raw_mode();
                     println!("\n{}", text);
                     _ = stdout.activate_raw_mode();
-                    *tabstatus = TabStatus::Ring
+                    //*tabstatus = TabStatus::Ring
                 }
             };
         }
