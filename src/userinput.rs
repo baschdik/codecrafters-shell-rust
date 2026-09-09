@@ -150,24 +150,17 @@ fn do_tab_completion(
         None => return user_input,
     };
 
-    //println!("user input {}", user_input);
-    //println!("last word: {}", last_word); //DEBUG
-
-    /*let matches = get_matches(Builtins::all_cmd_names(), &last_word);
+    let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
         return replace_userinput_w_match(user_input, &last_word, &matches[0]);
-    }*/
-    //DEBUG Enable
+    }
 
     let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
-    //println!("  matches {:?} with len {}", matches, matches.len());
     match matches.len() {
         0 => {
             stdout.write_char(&'\x07'); //Ring the bell,
-            //println!("on path 0")
         }
         1 => {
-            //println!("on path 1");
             return replace_userinput_w_match(user_input, &last_word, &matches[0]);
         }
         _ => {
@@ -179,9 +172,9 @@ fn do_tab_completion(
                 TabStatus::Print => {
                     matches.sort();
                     let text = &matches.join("  ")[..];
-                    stdout.suspend_raw_mode();
+                    _ = stdout.suspend_raw_mode();
                     println!("\n{}", text);
-                    stdout.activate_raw_mode();
+                    _ = stdout.activate_raw_mode();
                     *tabstatus = TabStatus::Ring
                 }
             };
@@ -190,5 +183,3 @@ fn do_tab_completion(
 
     user_input
 }
-
-//stdout.write_str_to_current_line(&matches.join(" ")),
