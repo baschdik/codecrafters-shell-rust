@@ -187,10 +187,12 @@ pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
             Event::Key(Key::Backspace) => {
                 user_input.pop();
                 stdout.del_lastchar();
+                tabstatus = TabStatus::Ring;
             }
             Event::Key(Key::Char(char)) => {
                 user_input.push(char);
                 stdout.write_char(&char);
+                tabstatus = TabStatus::Ring;
             }
             _ => continue,
         }
