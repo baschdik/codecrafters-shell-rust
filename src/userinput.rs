@@ -76,6 +76,28 @@ fn tab_completion(
         user_input
     }
 
+    fn longest_common_prefix(words: Vec<String>) -> String {
+        let first = if let Some(first) = words.first() {
+            first
+        } else {
+            return "".to_string();
+        };
+
+        let len = words
+            .iter()
+            .skip(1)
+            .map(|ele| {
+                ele.chars()
+                    .zip(first.chars())
+                    .take_while(|(ele, ele2)| ele == ele2)
+                    .count()
+            })
+            .min()
+            .unwrap_or_default();
+
+        first[..len].to_string()
+    }
+
     let last_word = match user_input.split_whitespace().last() {
         Some(x) => x.to_owned(),
         None => return user_input,
@@ -97,8 +119,10 @@ fn tab_completion(
         _ => {
             match tabstatus {
                 TabStatus::Ring => {
-                    stdout.write_char(&'\x07'); //Ring the bell;
-                    *tabstatus = TabStatus::Print
+                    *tabstatus = TabStatus::Print;
+                    //stdout.write_char(&'\x07'); //Ring the bell;
+                    let prefix = longest_common_prefix(matches);
+                    return replace_userinput_w_match(user_input, &last_word, &prefix);
                 }
                 TabStatus::Print => {
                     matches.sort();
