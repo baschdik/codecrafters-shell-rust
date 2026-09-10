@@ -122,7 +122,7 @@ fn tab_completion(
         _ => {
             let prefix = longest_common_prefix(&matches);
             if prefix.len() > last_word.len() {
-                return replace_userinput_w_match(user_input, &last_word, &prefix) + " ";
+                return replace_userinput_w_match(user_input, &last_word, &prefix);
             }
 
             match tabstatus {
