@@ -121,7 +121,7 @@ fn tab_completion(
                 TabStatus::Ring => {
                     *tabstatus = TabStatus::Print;
                     //stdout.write_char(&'\x07'); //Ring the bell;
-                    let prefix = longest_common_prefix(matches);
+                    let prefix = longest_common_prefix(matches) + " ";
                     return replace_userinput_w_match(user_input, &last_word, &prefix);
                 }
                 TabStatus::Print => {
