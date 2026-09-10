@@ -67,10 +67,14 @@ fn tab_completion(
         mut user_input: String,
         last_word: &str,
         the_match: &str,
+        trailing_space: bool,
     ) -> String {
         if let Some(stripped) = user_input.strip_suffix(last_word) {
             user_input = stripped.to_string();
             user_input.push_str(&the_match);
+            if trailing_space {
+                user_input += " ";
+            }
         }
         user_input
     }
@@ -107,7 +111,7 @@ fn tab_completion(
 
     let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
-        return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
+        return replace_userinput_w_match(user_input, &last_word, &matches[0], true);
     }
 
     let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
@@ -117,12 +121,12 @@ fn tab_completion(
             stdout.write_char(&'\x07'); //Ring the bell,
         }
         1 => {
-            return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
+            return replace_userinput_w_match(user_input, &last_word, &matches[0], true);
         }
         _ => {
             let prefix = longest_common_prefix(&matches);
             if prefix.len() > last_word.len() {
-                return replace_userinput_w_match(user_input, &last_word, &prefix);
+                return replace_userinput_w_match(user_input, &last_word, &prefix, false);
             }
 
             match tabstatus {
