@@ -71,12 +71,11 @@ fn tab_completion(
         if let Some(stripped) = user_input.strip_suffix(last_word) {
             user_input = stripped.to_string();
             user_input.push_str(&the_match);
-            user_input.push(' ');
         }
         user_input
     }
 
-    fn longest_common_prefix(words: Vec<String>) -> String {
+    fn longest_common_prefix(words: &Vec<String>) -> String {
         let first = if let Some(first) = words.first() {
             first
         } else {
@@ -105,7 +104,7 @@ fn tab_completion(
 
     let matches = get_matches(Builtins::all_cmd_names(), &last_word);
     if !matches.is_empty() {
-        return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+        return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
     }
 
     let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
@@ -114,22 +113,24 @@ fn tab_completion(
             stdout.write_char(&'\x07'); //Ring the bell,
         }
         1 => {
-            return replace_userinput_w_match(user_input, &last_word, &matches[0]);
+            return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
         }
         _ => {
             match tabstatus {
                 TabStatus::Ring => {
                     *tabstatus = TabStatus::Print;
                     //stdout.write_char(&'\x07'); //Ring the bell;
-                    let prefix = longest_common_prefix(matches) + " ";
+                    let prefix = longest_common_prefix(&matches);
                     return replace_userinput_w_match(user_input, &last_word, &prefix);
                 }
                 TabStatus::Print => {
                     matches.sort();
-                    let text = &matches.join("  ")[..];
+                    let matches_str = &matches.join("  ")[..];
                     _ = stdout.suspend_raw_mode();
-                    println!("\n{}", text);
+                    println!("\n{}", matches_str);
                     _ = stdout.activate_raw_mode();
+                    let prefix = longest_common_prefix(&matches);
+                    return replace_userinput_w_match(user_input, &last_word, &prefix);
                 }
             };
         }
