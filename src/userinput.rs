@@ -75,11 +75,11 @@ fn tab_completion(
         user_input
     }
 
-    fn longest_common_prefix(words: &Vec<String>) -> Option<String> {
+    fn longest_common_prefix(words: &Vec<String>) -> String {
         let first = if let Some(first) = words.first() {
             first
         } else {
-            return None;
+            return "".to_string();
         };
 
         let len = words
@@ -94,7 +94,10 @@ fn tab_completion(
             .min()
             .unwrap_or_default();
 
-        Some(first[..len].to_string())
+        if len == 0 {
+            return "".to_string();
+        }
+        first[..len].to_string()
     }
 
     let last_word = match user_input.split_whitespace().last() {
@@ -108,6 +111,7 @@ fn tab_completion(
     }
 
     let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
+
     match matches.len() {
         0 => {
             stdout.write_char(&'\x07'); //Ring the bell,
@@ -116,21 +120,23 @@ fn tab_completion(
             return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
         }
         _ => {
-            if let Some(prefix) = longest_common_prefix(&matches) {
-                return replace_userinput_w_match(user_input, &last_word, &prefix);
-            } else {
-                match tabstatus {
-                    TabStatus::Ring => {
-                        stdout.write_char(&'\x07'); //Ring the bell;
-                        *tabstatus = TabStatus::Print
-                    }
-                    TabStatus::Print => {
-                        matches.sort();
-                        let matches_str = &matches.join("  ")[..];
-                        _ = stdout.suspend_raw_mode();
-                        println!("\n{}", matches_str);
-                        _ = stdout.activate_raw_mode();
-                    }
+            let prefix = longest_common_prefix(&matches);
+            if prefix.len() > last_word.len() {
+                return replace_userinput_w_match(user_input, &last_word, &prefix) + " ";
+            }
+
+            match tabstatus {
+                TabStatus::Ring => {
+                    stdout.write_char(&'\x07'); //Ring the bell;
+                    //stdout.write_char(&'B'); // DEBUG
+                    *tabstatus = TabStatus::Print
+                }
+                TabStatus::Print => {
+                    matches.sort();
+                    let matches_str = &matches.join("  ")[..];
+                    _ = stdout.suspend_raw_mode();
+                    println!("\n{}", matches_str);
+                    _ = stdout.activate_raw_mode();
                 }
             }
         }
