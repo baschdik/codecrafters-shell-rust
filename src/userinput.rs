@@ -75,11 +75,11 @@ fn tab_completion(
         user_input
     }
 
-    fn longest_common_prefix(words: &Vec<String>) -> String {
+    fn longest_common_prefix(words: &Vec<String>) -> Option<String> {
         let first = if let Some(first) = words.first() {
             first
         } else {
-            return "".to_string();
+            return None;
         };
 
         let len = words
@@ -94,7 +94,7 @@ fn tab_completion(
             .min()
             .unwrap_or_default();
 
-        first[..len].to_string()
+        Some(first[..len].to_string())
     }
 
     let last_word = match user_input.split_whitespace().last() {
@@ -116,27 +116,43 @@ fn tab_completion(
             return replace_userinput_w_match(user_input, &last_word, &matches[0]) + " ";
         }
         _ => {
-            match tabstatus {
-                TabStatus::Ring => {
-                    *tabstatus = TabStatus::Print;
-                    //stdout.write_char(&'\x07'); //Ring the bell;
-                    let prefix = longest_common_prefix(&matches);
-                    return replace_userinput_w_match(user_input, &last_word, &prefix);
+            if let Some(prefix) = longest_common_prefix(&matches) {
+                return replace_userinput_w_match(user_input, &last_word, &prefix);
+            } else {
+                match tabstatus {
+                    TabStatus::Ring => {
+                        stdout.write_char(&'\x07'); //Ring the bell;
+                        *tabstatus = TabStatus::Print
+                    }
+                    TabStatus::Print => {
+                        matches.sort();
+                        let matches_str = &matches.join("  ")[..];
+                        _ = stdout.suspend_raw_mode();
+                        println!("\n{}", matches_str);
+                        _ = stdout.activate_raw_mode();
+                    }
                 }
-                TabStatus::Print => {
-                    matches.sort();
-                    let matches_str = &matches.join("  ")[..];
-                    _ = stdout.suspend_raw_mode();
-                    println!("\n{}", matches_str);
-                    _ = stdout.activate_raw_mode();
-                    let prefix = longest_common_prefix(&matches);
-                    return replace_userinput_w_match(user_input, &last_word, &prefix);
-                }
-            };
+            }
         }
     }
-
     user_input
+
+    /*match tabstatus {
+    TabStatus::Ring => {
+        *tabstatus = TabStatus::Print;
+        //stdout.write_char(&'\x07'); //Ring the bell;
+        let prefix = longest_common_prefix(&matches);
+        return replace_userinput_w_match(user_input, &last_word, &prefix);
+    }
+    TabStatus::Print => {
+        matches.sort();
+        let matches_str = &matches.join("  ")[..];
+        _ = stdout.suspend_raw_mode();
+        println!("\n{}", matches_str);
+        _ = stdout.activate_raw_mode();
+        let prefix = longest_common_prefix(&matches);
+        return replace_userinput_w_match(user_input, &last_word, &prefix);
+    }*/
 }
 
 pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
