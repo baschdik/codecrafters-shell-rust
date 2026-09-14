@@ -66,9 +66,23 @@ impl Command {
                         return Err(CommandErrors::MissingRedirectionPath("Stdout".to_string()));
                     }
                 }
+            } else if matches!(ele.as_str(), ">>" | "1>>") {
+                match iter.next() {
+                    Some(path) => stdout = OutputDirection::File(PathBuf::from(path)),
+                    None => {
+                        return Err(CommandErrors::MissingRedirectionPath("Stdout".to_string()));
+                    }
+                }
             } else if ele == "2>" {
                 match iter.next() {
                     Some(path) => stderr = OutputDirection::File(PathBuf::from(path)),
+                    None => {
+                        return Err(CommandErrors::MissingRedirectionPath("Stderr".to_string()));
+                    }
+                }
+            } else if ele == "2>>" {
+                match iter.next() {
+                    Some(path) => stderr = OutputDirection::Append(PathBuf::from(path)),
                     None => {
                         return Err(CommandErrors::MissingRedirectionPath("Stderr".to_string()));
                     }
