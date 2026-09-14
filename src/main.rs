@@ -46,6 +46,7 @@ impl OutputStrings {
     fn append_file(str: &str, path: &PathBuf) {
         let mut f = File::options()
             .append(true)
+            .create(true)
             .open(path)
             .expect("Failed to open file!");
         write!(&mut f, "{}", str).expect("Failed to append to file");
