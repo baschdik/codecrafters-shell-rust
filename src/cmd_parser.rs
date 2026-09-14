@@ -68,7 +68,7 @@ impl Command {
                 }
             } else if matches!(ele.as_str(), ">>" | "1>>") {
                 match iter.next() {
-                    Some(path) => stdout = OutputDirection::File(PathBuf::from(path)),
+                    Some(path) => stdout = OutputDirection::Append(PathBuf::from(path)),
                     None => {
                         return Err(CommandErrors::MissingRedirectionPath("Stdout".to_string()));
                     }
