@@ -6,8 +6,8 @@ use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, cursor};
 
-use crate::builtin::Builtins;
-use crate::path;
+use crate::builtin_cmd::Builtins;
+use crate::external_cmd;
 
 use crate::history::{CmdHistory, HistHandling};
 
@@ -114,7 +114,7 @@ fn tab_completion(
         return replace_userinput_w_match(user_input, &last_word, &matches[0], true);
     }
 
-    let mut matches = get_matches(path::all_cmd_in_path().unwrap_or_default(), &last_word);
+    let mut matches = get_matches(external_cmd::all_in_path().unwrap_or_default(), &last_word);
 
     match matches.len() {
         0 => {
@@ -132,7 +132,6 @@ fn tab_completion(
             match tabstatus {
                 TabStatus::Ring => {
                     stdout.write_char(&'\x07'); //Ring the bell;
-                    //stdout.write_char(&'B'); // DEBUG
                     *tabstatus = TabStatus::Print
                 }
                 TabStatus::Print => {
@@ -146,26 +145,9 @@ fn tab_completion(
         }
     }
     user_input
-
-    /*match tabstatus {
-    TabStatus::Ring => {
-        *tabstatus = TabStatus::Print;
-        //stdout.write_char(&'\x07'); //Ring the bell;
-        let prefix = longest_common_prefix(&matches);
-        return replace_userinput_w_match(user_input, &last_word, &prefix);
-    }
-    TabStatus::Print => {
-        matches.sort();
-        let matches_str = &matches.join("  ")[..];
-        _ = stdout.suspend_raw_mode();
-        println!("\n{}", matches_str);
-        _ = stdout.activate_raw_mode();
-        let prefix = longest_common_prefix(&matches);
-        return replace_userinput_w_match(user_input, &last_word, &prefix);
-    }*/
 }
 
-pub fn handle_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
+pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     print!("$ ");
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();

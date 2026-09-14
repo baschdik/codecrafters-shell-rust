@@ -1,33 +1,76 @@
-use std::{path::PathBuf, process::Command, str::FromStr};
-
 mod history;
-use crate::history::HistHandling;
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+};
 
-mod builtin;
-use builtin::*;
+use crate::{
+    cmd_parser::Command,
+    cmd_parser::OutputDirection::{self},
+    history::HistHandling,
+};
+
+mod builtin_cmd;
 
 mod userinput;
-use userinput::handle_userinput;
+use userinput::get_userinput;
 
-mod path;
+mod cmd_parser;
 
-#[allow(dead_code)]
-enum KindofCmd {
-    Builtin(Builtins),
-    External(PathBuf),
+mod external_cmd;
+
+#[derive(Debug)]
+struct OutputStrings {
+    out: String,
+    err: String,
 }
 
-impl FromStr for KindofCmd {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(builtin) = s.parse::<Builtins>() {
-            return Ok(KindofCmd::Builtin(builtin));
+impl OutputStrings {
+    fn write(&self, out_direction: &OutputDirection, err_direction: &OutputDirection) {
+        match out_direction {
+            OutputDirection::Terminal => print!("{}", self.out),
+            OutputDirection::File(path) => {
+                fs::write(path, &self.out).expect("Failed to write to file")
+            }
+            OutputDirection::Append(path) => Self::append_file(&self.out, path),
         }
-        if let Some(path_buf) = path::get_cmd_from_path(s) {
-            return Ok(KindofCmd::External(path_buf));
+        match err_direction {
+            OutputDirection::Terminal => eprint!("{}", self.err),
+            OutputDirection::File(path) => {
+                fs::write(path, &self.err).expect("Failed to write to file")
+            }
+            OutputDirection::Append(path) => Self::append_file(&self.err, path),
         }
-        Err(())
+    }
+    fn append_file(str: &str, path: &PathBuf) {
+        let mut f = File::options()
+            .append(true)
+            .open(path)
+            .expect("Failed to open file!");
+        write!(&mut f, "{}", str).expect("Failed to append to file");
+    }
+    fn from_out(out: &str) -> Self {
+        let line_end = if !out.is_empty() && !out.ends_with("\n") {
+            "\n"
+        } else {
+            ""
+        };
+        Self {
+            out: out.to_string() + line_end,
+            err: "".to_string(),
+        }
+    }
+    fn from_err(err: &str) -> Self {
+        let line_end = if !err.is_empty() && !err.ends_with("\n") {
+            "\n"
+        } else {
+            ""
+        };
+        Self {
+            out: "".to_string(),
+            err: err.to_string() + line_end,
+        }
     }
 }
 
@@ -35,25 +78,26 @@ fn main() {
     let mut cmd_history = history::CmdHistory::init();
 
     loop {
-        let user_input_split = handle_userinput(&mut cmd_history);
-
+        let user_input_split = get_userinput(&mut cmd_history);
         if user_input_split.len() == 0 {
             continue;
         }
-        let command = user_input_split[0].parse::<KindofCmd>();
-        match command {
-            Err(_) => println!("{}: command not found", &user_input_split[0]),
-            Ok(KindofCmd::Builtin(cmd)) => cmd.execute_cmd(user_input_split, &mut cmd_history),
-            Ok(KindofCmd::External(_)) => run_external_cmd(user_input_split),
-        }
-    }
-}
 
-fn run_external_cmd(args: Vec<String>) {
-    let output = Command::new(&args[0])
-        .args(&args[1..])
-        .output()
-        .expect("failed to run process");
-    let output_msg = String::from_utf8(output.stdout);
-    print!("{}", output_msg.unwrap())
+        let command = cmd_parser::Command::parse(user_input_split.as_ref());
+        match &command {
+            Err(e) => {
+                OutputStrings::from_err(&(e.to_string() + "\n"))
+                    .write(&OutputDirection::Terminal, &OutputDirection::Terminal);
+            }
+            Ok(cmd) => match &cmd.cmd {
+                cmd_parser::CommandKind::Builtin(builtin_cmd) => {
+                    OutputStrings::from_out(&builtin_cmd.execute(&cmd.args, &mut cmd_history))
+                        .write(&cmd.out_direct, &cmd.out_direct);
+                }
+                cmd_parser::CommandKind::External(_) => {
+                    external_cmd::run(cmd).write(&cmd.out_direct, &cmd.err_direct)
+                }
+            },
+        };
+    }
 }

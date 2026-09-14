@@ -4,9 +4,9 @@ use std::{env::var, str::FromStr};
 use strum::{EnumIter, IntoEnumIterator};
 use thiserror::Error;
 
+use crate::external_cmd;
 use crate::history;
 use crate::history::HistHandling;
-use crate::path;
 
 #[derive(Debug, EnumIter)]
 pub enum Builtins {
@@ -54,62 +54,57 @@ impl Builtins {
         names
     }
 
-    pub fn execute_cmd(self, user_str: Vec<String>, cmd_history: &mut history::CmdHistory) {
+    pub fn execute(&self, args: &[String], cmd_history: &mut history::CmdHistory) -> String {
         match self {
-            Builtins::Echo => builtin_echo(user_str),
+            Builtins::Cd => builtin_cd(args),
+            Builtins::Echo => builtin_echo(args),
             Builtins::Exit => builtin_exit(cmd_history),
-            Builtins::Type => builtin_type(user_str),
+            Builtins::History => builtin_history(args, cmd_history),
             Builtins::Pwd => builtin_pwd(),
-            Builtins::Cd => builtin_cd(user_str),
-            Builtins::History => builtin_history(user_str, cmd_history),
+            Builtins::Type => builtin_type(args),
         }
     }
 }
 
-pub fn builtin_cd(user_str: Vec<String>) {
-    if user_str.len() == 1 {
-        return;
-    }
-    let path_str = match &user_str[1][..] {
-        "~" => var("HOME").expect("No $HOME found."),
-        _ => user_str[1].to_string(),
+pub fn builtin_cd(args: &[String]) -> String {
+    let path_str = match args.first() {
+        Some(s) if s == "~" => var("HOME").expect("No $HOME found."),
+        Some(_) => args[0].to_string(),
+        None => return "".to_string(),
     };
 
     if let Err(_) = env::set_current_dir(&path_str) {
-        println!("cd: {}: No such file or directory", path_str)
+        return format!("cd: {}: No such file or directory", path_str);
+    } else {
+        return "".to_string();
     }
 }
 
-pub fn builtin_echo(user_str: Vec<String>) {
-    for ele in &user_str[1..] {
-        print!("{} ", ele)
-    }
-    println!()
+pub fn builtin_echo(args: &[String]) -> String {
+    String::from(args.join(" "))
 }
 
-pub fn builtin_exit(cmd_history: &mut history::CmdHistory) {
+pub fn builtin_exit(cmd_history: &mut history::CmdHistory) -> String {
     if let Ok(histfile) = var("HISTFILE") {
         cmd_history.write_to(&histfile);
     }
     std::process::exit(0)
 }
 
-pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHistory) {
-    match HistoryArgs::new(user_str) {
+pub fn builtin_history(args: &[String], cmd_history: &mut history::CmdHistory) -> String {
+    return match HistoryArgs::new(args) {
         Err(e) => {
-            println!("{}", e);
-            return;
+            format!("{}", e)
         }
         Ok(HistoryArgs::Show) => cmd_history.show(),
         Ok(HistoryArgs::ShowLast(n)) => cmd_history.show_last(n),
-        Ok(HistoryArgs::ReadHistory(path)) => {
-            cmd_history
-                .read_in(&path)
-                .expect("Couldn't read Histfile at given path");
-        }
+        Ok(HistoryArgs::ReadHistory(path)) => match cmd_history.read_in(&path) {
+            Ok(_) => "".to_string(),
+            Err(e) => e.to_string(),
+        },
         Ok(HistoryArgs::WriteHistory(path)) => cmd_history.write_to(&path),
         Ok(HistoryArgs::AppendHistory(path)) => cmd_history.append_to(&path),
-    }
+    };
     enum HistoryArgs {
         Show,
         ShowLast(usize),
@@ -119,14 +114,14 @@ pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHist
     }
 
     impl HistoryArgs {
-        fn new(user_str: Vec<String>) -> Result<HistoryArgs, HistoryArgErrors> {
-            if user_str.len() == 1 {
+        fn new(user_str: &[String]) -> Result<HistoryArgs, HistoryArgErrors> {
+            if user_str.len() == 0 {
                 return Ok(HistoryArgs::Show);
             }
-            match &user_str[1][..] {
+            match &user_str[0][..] {
                 "-r" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::ReadHistory(user_str[2].to_string()));
+                        return Ok(HistoryArgs::ReadHistory(user_str[1].to_string()));
                     } else {
                         return Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -r <Path_to_History>".to_string(),
@@ -135,7 +130,7 @@ pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHist
                 }
                 "-w" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::WriteHistory(user_str[2].to_string()));
+                        return Ok(HistoryArgs::WriteHistory(user_str[1].to_string()));
                     } else {
                         return Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -w <Path_to_History>".to_string(),
@@ -144,7 +139,7 @@ pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHist
                 }
                 "-a" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::AppendHistory(user_str[2].to_string()));
+                        return Ok(HistoryArgs::AppendHistory(user_str[1].to_string()));
                     } else {
                         return Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -a <Path_to_History>".to_string(),
@@ -169,17 +164,20 @@ pub fn builtin_history(user_str: Vec<String>, cmd_history: &mut history::CmdHist
     }
 }
 
-pub fn builtin_pwd() {
-    println!("{}", env::current_dir().expect("pwd failed").display())
+pub fn builtin_pwd() -> String {
+    format!("{}", env::current_dir().expect("pwd failed").display())
 }
 
-pub fn builtin_type(str_split: Vec<String>) {
-    if let Ok(_) = str_split[1].parse::<Builtins>() {
-        println!("{} is a shell builtin", &str_split[1]);
-        return;
+pub fn builtin_type(args: &[String]) -> String {
+    if args.len() == 0 {
+        return "".to_string();
     }
-    match path::get_cmd_from_path(&str_split[1]) {
-        Some(path) => println!("{} is {}", str_split[1], path.display()),
-        None => println!("{}: not found", str_split[1]),
+
+    if let Ok(_) = args[0].parse::<Builtins>() {
+        return format!("{} is a shell builtin", &args[0]);
+    }
+    match external_cmd::from_path(&args[0]) {
+        Some(path) => format!("{} is {}", args[0], path.display()),
+        None => format!("{}: not found", args[0]),
     }
 }

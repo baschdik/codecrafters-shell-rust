@@ -10,34 +10,40 @@ pub struct CmdHistory {
 }
 
 pub trait HistHandling {
-    fn show(&self);
-    fn show_last(&self, num_entry_toshow: usize);
+    fn show(&self) -> String;
+    fn show_last(&self, num_entry_toshow: usize) -> String;
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error>;
-    fn write_to(&mut self, path: &str);
-    fn append_to(&mut self, path: &str);
+    fn write_to(&mut self, path: &str) -> String;
+    fn append_to(&mut self, path: &str) -> String;
     fn get_latest(&self, entry_num: usize) -> Option<String>;
     fn init() -> CmdHistory;
 }
 
 impl HistHandling for CmdHistory {
-    fn show(&self) {
-        self.show_last(self.data.len());
+    fn show(&self) -> String {
+        self.show_last(self.data.len())
     }
 
-    fn show_last(&self, no_entry_toshow: usize) {
-        let from_index = self.data.len() - no_entry_toshow;
+    fn show_last(&self, num_entry_toshow: usize) -> String {
+        let mut output = String::new();
+        let from_index = self.data.len() - num_entry_toshow;
         for (current_index, entry) in self.data[from_index..].iter().enumerate() {
-            println!("{:>5} {}", current_index + 1 + from_index, entry);
+            output.push_str(format!("{:>5} {}", current_index + 1 + from_index, &entry).as_ref());
+            output.push('\n');
+        }
+        output
+    }
+
+    fn write_to(&mut self, path: &str) -> String {
+        let history_str = self.data.join("\n") + "\n";
+        self.line_written_to_file = Some(self.data.len() - 1);
+        match fs::write(path, history_str) {
+            Ok(_) => "".to_string(),
+            Err(_) => "Failed to write to history file!".to_string(),
         }
     }
 
-    fn write_to(&mut self, path: &str) {
-        let history_str = self.data.join("\n") + "\n";
-        fs::write(path, history_str).expect("Failed to write to history file!");
-        self.line_written_to_file = Some(self.data.len() - 1)
-    }
-
-    fn append_to(&mut self, path: &str) {
+    fn append_to(&mut self, path: &str) -> String {
         let write_from = match self.line_written_to_file {
             None => 0,
             Some(n) => n + 1,
@@ -47,8 +53,11 @@ impl HistHandling for CmdHistory {
             .append(true)
             .open(path)
             .expect("Failed to open history file!");
-        write!(&mut f, "{}", history_str).expect("Failed to append to history file!");
-        self.line_written_to_file = Some(self.data.len() - 1)
+        self.line_written_to_file = Some(self.data.len() - 1);
+        match write!(&mut f, "{}", history_str) {
+            Ok(_) => "".to_string(),
+            Err(_) => "Failed to append to history file!".to_string(),
+        }
     }
 
     fn read_in(&mut self, path: &str) -> Result<usize, io::Error> {
@@ -73,7 +82,6 @@ impl HistHandling for CmdHistory {
         }
         let from_index = self.data.len() - entry_num - 1;
         Some(self.data[from_index].to_string())
-        //TODO: Implement None if i is to high
     }
 
     fn init() -> CmdHistory {
