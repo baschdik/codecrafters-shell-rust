@@ -92,7 +92,7 @@ fn main() {
             Ok(cmd) => match &cmd.cmd {
                 cmd_parser::CommandKind::Builtin(builtin_cmd) => {
                     OutputStrings::from_out(&builtin_cmd.execute(&cmd.args, &mut cmd_history))
-                        .write(&cmd.out_direct, &cmd.out_direct);
+                        .write(&cmd.out_direct, &cmd.err_direct);
                 }
                 cmd_parser::CommandKind::External(_) => {
                     external_cmd::run(cmd).write(&cmd.out_direct, &cmd.err_direct)
