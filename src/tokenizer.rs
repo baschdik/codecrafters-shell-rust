@@ -44,7 +44,7 @@ pub fn tokenize(input: &String) -> Vec<String> {
         processed.append(&mut ele_processed);
     }
 
-    println!("Final: {:?}", processed); //DEBUG
+    //println!("Final: {:?}", processed); //DEBUG
     processed
 
     //input.split_whitespace().map(String::from).collect()
