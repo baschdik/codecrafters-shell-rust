@@ -50,7 +50,13 @@ pub fn tokenize(input: &String) -> Vec<String> {
                 }
             }
             Quotation::Double => {
-                if c == '"' {
+                if c == '\\' {
+                    processed.last_mut().unwrap().push(
+                        input_iter
+                            .next_if(|c| matches!(c, '"' | '\\'))
+                            .unwrap_or_default(),
+                    );
+                } else if c == '"' {
                     //Concatenate adjacent quoted strings:
                     if input_iter.next_if(|c| *c == '\'').is_some() {
                         continue;
