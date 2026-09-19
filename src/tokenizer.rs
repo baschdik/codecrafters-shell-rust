@@ -11,10 +11,17 @@ pub fn tokenize(input: &String) -> Vec<String> {
     let mut splited = vec!["".to_string()];
     let mut splited_qoutation = vec![Quotation::No];
 
-    for c in input.chars() {
+    let mut input_iter = input.chars().peekable();
+    //for c in input_iter {
+    while let Some(c) = input_iter.next() {
         match splited_qoutation.last().unwrap() {
             Quotation::No => {
                 if c == '\'' {
+                    if input_iter.peek() == Some(&'\'') {
+                        //Empty quotes '' are ignored.
+                        _ = input_iter.next();
+                        continue;
+                    }
                     splited_qoutation.push(Quotation::Single);
                     splited.push("".to_string());
                 } else {
@@ -23,6 +30,11 @@ pub fn tokenize(input: &String) -> Vec<String> {
             }
             Quotation::Single => {
                 if c == '\'' {
+                    if input_iter.peek() == Some(&'\'') {
+                        //Adjacent quoted strings are concatenated.
+                        _ = input_iter.next();
+                        continue;
+                    }
                     splited_qoutation.push(Quotation::No);
                     splited.push("".to_string());
                 } else {
@@ -44,7 +56,7 @@ pub fn tokenize(input: &String) -> Vec<String> {
         processed.append(&mut ele_processed);
     }
 
-    println!("Final: {:?}", processed); //DEBUG
+    //println!("Final: {:?}", processed); //DEBUG
     processed
 
     //input.split_whitespace().map(String::from).collect()
