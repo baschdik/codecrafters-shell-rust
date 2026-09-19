@@ -147,7 +147,7 @@ fn tab_completion(
     user_input
 }
 
-pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
+pub fn get_userinput(cmd_history: &mut CmdHistory) -> String {
     print!("$ ");
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -212,5 +212,5 @@ pub fn get_userinput(cmd_history: &mut CmdHistory) -> Vec<String> {
     user_input = user_input.trim().to_string();
     cmd_history.data.push(user_input.to_owned());
 
-    user_input.split_whitespace().map(String::from).collect()
+    user_input
 }

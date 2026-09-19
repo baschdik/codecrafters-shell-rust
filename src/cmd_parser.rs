@@ -4,7 +4,6 @@ use thiserror::Error;
 use crate::{
     builtin_cmd::{self, Builtins},
     external_cmd::{self},
-    history::CmdHistory,
 };
 
 #[derive(Debug)]

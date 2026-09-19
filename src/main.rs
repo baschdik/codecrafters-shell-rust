@@ -1,24 +1,21 @@
-mod history;
 use std::{
     fs::{self, File},
     io::Write,
     path::PathBuf,
 };
 
+mod builtin_cmd;
+mod cmd_parser;
+mod external_cmd;
+mod history;
+mod tokenizer;
+mod userinput;
+
 use crate::{
-    cmd_parser::Command,
     cmd_parser::OutputDirection::{self},
     history::HistHandling,
 };
-
-mod builtin_cmd;
-
-mod userinput;
 use userinput::get_userinput;
-
-mod cmd_parser;
-
-mod external_cmd;
 
 #[derive(Debug)]
 struct OutputStrings {
@@ -79,10 +76,14 @@ fn main() {
     let mut cmd_history = history::CmdHistory::init();
 
     loop {
-        let user_input_split = get_userinput(&mut cmd_history);
-        if user_input_split.len() == 0 {
+        let user_input = get_userinput(&mut cmd_history);
+        if user_input.len() == 0 {
             continue;
+            //break; //DEBUG
         }
+
+        let user_input_split = tokenizer::tokenize(&user_input);
+        //continue;
 
         let command = cmd_parser::Command::parse(user_input_split.as_ref());
         match &command {
