@@ -13,7 +13,12 @@ pub fn tokenize(input: &String) -> Vec<String> {
     while let Some(c) = input_iter.next() {
         match qoutation_status {
             Quotation::No => {
-                if c.is_whitespace() {
+                if c == '\\' {
+                    processed
+                        .last_mut()
+                        .unwrap()
+                        .push(input_iter.next().unwrap_or_default());
+                } else if c.is_whitespace() {
                     processed.push("".to_string());
                     //remove extra whitespace:
                     while input_iter.next_if(|c| c.is_whitespace()).is_some() {}
@@ -22,7 +27,6 @@ pub fn tokenize(input: &String) -> Vec<String> {
                     if input_iter.next_if(|c| *c == '\'').is_some() {
                         continue;
                     }
-
                     qoutation_status = Quotation::Single;
                 } else if c == '"' {
                     //Ignore Empty quotes "":
