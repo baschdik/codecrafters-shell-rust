@@ -1,51 +1,64 @@
-use std::iter::zip;
-
 #[derive(Debug)]
 enum Quotation {
     No,
     Single,
-    //Double,
+    Double,
 }
 
 pub fn tokenize(input: &String) -> Vec<String> {
-    let mut splited = vec!["".to_string()];
-    let mut splited_qoutation = vec![Quotation::No];
+    let mut processed = vec!["".to_string()];
+    let mut qoutation_status = Quotation::No;
 
-    for c in input.chars() {
-        match splited_qoutation.last().unwrap() {
+    let mut input_iter = input.chars().peekable();
+    while let Some(c) = input_iter.next() {
+        match qoutation_status {
             Quotation::No => {
-                if c == '\'' {
-                    splited_qoutation.push(Quotation::Single);
-                    splited.push("".to_string());
+                if c.is_whitespace() {
+                    processed.push("".to_string());
+                    //remove extra whitespace:
+                    while input_iter.next_if(|c| c.is_whitespace()).is_some() {}
+                } else if c == '\'' {
+                    //Ignore Empty quotes '':
+                    if input_iter.next_if(|c| *c == '\'').is_some() {
+                        continue;
+                    }
+
+                    qoutation_status = Quotation::Single;
+                } else if c == '"' {
+                    //Ignore Empty quotes "":
+                    if input_iter.next_if(|c| *c == '"').is_some() {
+                        continue;
+                    }
+                    qoutation_status = Quotation::Double;
                 } else {
-                    splited.last_mut().unwrap().push(c);
+                    processed.last_mut().unwrap().push(c);
                 }
             }
             Quotation::Single => {
                 if c == '\'' {
-                    splited_qoutation.push(Quotation::No);
-                    splited.push("".to_string());
+                    //Concatenate adjacent quoted strings:
+                    if input_iter.next_if(|c| *c == '\'').is_some() {
+                        continue;
+                    }
+                    qoutation_status = Quotation::No;
                 } else {
-                    splited.last_mut().unwrap().push(c);
+                    processed.last_mut().unwrap().push(c);
+                }
+            }
+            Quotation::Double => {
+                if c == '"' {
+                    //Concatenate adjacent quoted strings:
+                    if input_iter.next_if(|c| *c == '\'').is_some() {
+                        continue;
+                    }
+                    qoutation_status = Quotation::No;
+                } else {
+                    processed.last_mut().unwrap().push(c);
                 }
             }
         }
     }
 
-    //println!("Split Vektor {:?}", splited); //DEBUG
-    //println!("Quotation Vektor {:?}", splited_qoutation); //DEBUG
-
-    let mut processed: Vec<String> = Vec::new();
-    for (quot, ele) in zip(splited_qoutation, splited) {
-        let mut ele_processed = match quot {
-            Quotation::No => ele.split_whitespace().map(String::from).collect(),
-            Quotation::Single => vec![ele],
-        };
-        processed.append(&mut ele_processed);
-    }
-
     //println!("Final: {:?}", processed); //DEBUG
     processed
-
-    //input.split_whitespace().map(String::from).collect()
 }
