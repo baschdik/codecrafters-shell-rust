@@ -28,7 +28,7 @@ impl HistHandling for CmdHistory {
         let mut output = String::new();
         let from_index = self.data.len() - num_entry_toshow;
         for (current_index, entry) in self.data[from_index..].iter().enumerate() {
-            output.push_str(format!("{:>5} {}", current_index + 1 + from_index, &entry).as_ref());
+            output.push_str(format!("{:>5} {}", current_index + 1 + from_index, entry).as_ref());
             output.push('\n');
         }
         output
@@ -64,7 +64,7 @@ impl HistHandling for CmdHistory {
         //Don't append an empty file
         let metadata = fs::metadata(path)?;
         if metadata.len() == 0 {
-            return Err(Error::new(io::ErrorKind::Other, "File is empty"));
+            return Err(Error::other("File is empty"));
         }
 
         let mut history_file_content: Vec<String> = fs::read_to_string(path)?
@@ -90,11 +90,11 @@ impl HistHandling for CmdHistory {
             line_written_to_file: None,
         };
 
-        if let Ok(histfile) = var("HISTFILE") {
-            if let Ok(n) = cmd_history.read_in(&histfile) {
-                cmd_history.line_written_to_file = Some(n - 1);
-            }
-        };
+        if let Ok(histfile) = var("HISTFILE")
+            && let Ok(n) = cmd_history.read_in(&histfile)
+        {
+            cmd_history.line_written_to_file = Some(n - 1);
+        }
         cmd_history
     }
 }

@@ -45,7 +45,7 @@ pub fn run(cmd: &cmd_parser::Command) -> OutputStrings {
     let output_msg = String::from_utf8(output.stdout);
     let error_msg = String::from_utf8(output.stderr);
     OutputStrings {
-        out: format!("{}", output_msg.unwrap()),
-        err: format!("{}", error_msg.unwrap()),
+        out: output_msg.unwrap().to_string(),
+        err: error_msg.unwrap().to_string(),
     }
 }

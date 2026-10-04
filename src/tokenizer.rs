@@ -14,6 +14,7 @@ pub fn tokenize(input: &String) -> Vec<String> {
         match qoutation_status {
             Quotation::No => {
                 if c == '\\' {
+                    //escaping
                     processed
                         .last_mut()
                         .unwrap()
@@ -51,6 +52,7 @@ pub fn tokenize(input: &String) -> Vec<String> {
             }
             Quotation::Double => {
                 if c == '\\' {
+                    //Escape only " and \
                     processed.last_mut().unwrap().push(
                         input_iter
                             .next_if(|c| matches!(c, '"' | '\\'))

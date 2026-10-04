@@ -73,15 +73,15 @@ pub fn builtin_cd(args: &[String]) -> String {
         None => return "".to_string(),
     };
 
-    if let Err(_) = env::set_current_dir(&path_str) {
-        return format!("cd: {}: No such file or directory", path_str);
+    if env::set_current_dir(&path_str).is_err() {
+        format!("cd: {}: No such file or directory", path_str)
     } else {
-        return "".to_string();
+        "".to_string()
     }
 }
 
 pub fn builtin_echo(args: &[String]) -> String {
-    String::from(args.join(" "))
+    args.join(" ")
 }
 
 pub fn builtin_exit(cmd_history: &mut history::CmdHistory) -> String {
@@ -115,42 +115,42 @@ pub fn builtin_history(args: &[String], cmd_history: &mut history::CmdHistory) -
 
     impl HistoryArgs {
         fn new(user_str: &[String]) -> Result<HistoryArgs, HistoryArgErrors> {
-            if user_str.len() == 0 {
+            if user_str.is_empty() {
                 return Ok(HistoryArgs::Show);
             }
             match &user_str[0][..] {
                 "-r" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::ReadHistory(user_str[1].to_string()));
+                        Ok(HistoryArgs::ReadHistory(user_str[1].to_string()))
                     } else {
-                        return Err(HistoryArgErrors::MissingPathArgument(
+                        Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -r <Path_to_History>".to_string(),
-                        ));
+                        ))
                     }
                 }
                 "-w" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::WriteHistory(user_str[1].to_string()));
+                        Ok(HistoryArgs::WriteHistory(user_str[1].to_string()))
                     } else {
-                        return Err(HistoryArgErrors::MissingPathArgument(
+                        Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -w <Path_to_History>".to_string(),
-                        ));
+                        ))
                     }
                 }
                 "-a" => {
                     if user_str.len() >= 3 {
-                        return Ok(HistoryArgs::AppendHistory(user_str[1].to_string()));
+                        Ok(HistoryArgs::AppendHistory(user_str[1].to_string()))
                     } else {
-                        return Err(HistoryArgErrors::MissingPathArgument(
+                        Err(HistoryArgErrors::MissingPathArgument(
                             "Usage: history -a <Path_to_History>".to_string(),
-                        ));
+                        ))
                     }
                 }
                 n => match n.parse::<usize>() {
-                    Ok(val) => return Ok(HistoryArgs::ShowLast(val)),
-                    Err(_) => return Err(HistoryArgErrors::NoIntArg),
+                    Ok(val) => Ok(HistoryArgs::ShowLast(val)),
+                    Err(_) => Err(HistoryArgErrors::NoIntArg),
                 },
-            };
+            }
         }
     }
 
@@ -169,12 +169,12 @@ pub fn builtin_pwd() -> String {
 }
 
 pub fn builtin_type(args: &[String]) -> String {
-    if args.len() == 0 {
+    if args.is_empty() {
         return "".to_string();
     }
 
-    if let Ok(_) = args[0].parse::<Builtins>() {
-        return format!("{} is a shell builtin", &args[0]);
+    if args[0].parse::<Builtins>().is_ok() {
+        return format!("{} is a shell builtin", args[0]);
     }
     match external_cmd::from_path(&args[0]) {
         Some(path) => format!("{} is {}", args[0], path.display()),
