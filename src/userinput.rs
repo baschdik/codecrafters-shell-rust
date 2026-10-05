@@ -23,10 +23,10 @@ impl HandleKeyEnvent for RawTerminal<Stdout> {
         self.flush().unwrap()
     }
     fn del_lastchar(&mut self) {
-        if let Ok((col, _)) = self.cursor_pos() {
-            if col <= 3 {
-                return; //Dont delete the Prompt on Screen
-            }
+        if let Ok((col, _)) = self.cursor_pos()
+            && col <= 3
+        {
+            return; //Dont delete the Prompt on Screen
         }
         _ = write!(self, "\x08{}", clear::AfterCursor);
         self.flush().unwrap();
@@ -71,7 +71,7 @@ fn tab_completion(
     ) -> String {
         if let Some(stripped) = user_input.strip_suffix(last_word) {
             user_input = stripped.to_string();
-            user_input.push_str(&the_match);
+            user_input.push_str(the_match);
             if trailing_space {
                 user_input += " ";
             }
@@ -79,7 +79,7 @@ fn tab_completion(
         user_input
     }
 
-    fn longest_common_prefix(words: &Vec<String>) -> String {
+    fn longest_common_prefix(words: &[String]) -> String {
         let first = if let Some(first) = words.first() {
             first
         } else {
@@ -177,10 +177,10 @@ pub fn get_userinput(cmd_history: &mut CmdHistory) -> String {
             }
             Event::Key(Key::Down) => {
                 if !history_search_down {
-                    which_history_entry = which_history_entry.checked_sub(1).unwrap_or_default();
+                    which_history_entry = which_history_entry.saturating_sub(1);
                     history_search_down = true;
                 }
-                which_history_entry = which_history_entry.checked_sub(1).unwrap_or_default();
+                which_history_entry = which_history_entry.saturating_sub(1);
 
                 if let Some(cmd_string) = cmd_history.get_latest(which_history_entry) {
                     stdout.write_str_to_current_line(&cmd_string);
@@ -207,7 +207,7 @@ pub fn get_userinput(cmd_history: &mut CmdHistory) -> String {
     }
 
     stdout.suspend_raw_mode().unwrap();
-    println!("");
+    println!();
 
     user_input = user_input.trim().to_string();
     cmd_history.data.push(user_input.to_owned());

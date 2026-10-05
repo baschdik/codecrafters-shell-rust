@@ -77,7 +77,7 @@ fn main() {
 
     loop {
         let user_input = get_userinput(&mut cmd_history);
-        if user_input.len() == 0 {
+        if user_input.is_empty() {
             continue;
             //break; //DEBUG
         }

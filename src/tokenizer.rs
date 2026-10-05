@@ -5,7 +5,7 @@ enum Quotation {
     Double,
 }
 
-pub fn tokenize(input: &String) -> Vec<String> {
+pub fn tokenize(input: &str) -> Vec<String> {
     let mut processed = vec!["".to_string()];
     let mut qoutation_status = Quotation::No;
 
