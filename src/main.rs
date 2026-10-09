@@ -1,105 +1,23 @@
-use std::{
-    fs::{self, File},
-    io::Write,
-    path::PathBuf,
-};
-
-mod builtin_cmd;
-mod cmd_parser;
-mod external_cmd;
-mod history;
-mod tokenizer;
-mod userinput;
-
-use crate::{
-    cmd_parser::OutputDirection::{self},
-    history::HistHandling,
-};
-use userinput::get_userinput;
-
-#[derive(Debug)]
-struct OutputStrings {
-    out: String,
-    err: String,
-}
-
-impl OutputStrings {
-    fn write(&self, out_direction: &OutputDirection, err_direction: &OutputDirection) {
-        match out_direction {
-            OutputDirection::Terminal => print!("{}", self.out),
-            OutputDirection::File(path) => {
-                fs::write(path, &self.out).expect("Failed to write to file")
-            }
-            OutputDirection::Append(path) => Self::append_file(&self.out, path),
-        }
-        match err_direction {
-            OutputDirection::Terminal => eprint!("{}", self.err),
-            OutputDirection::File(path) => {
-                fs::write(path, &self.err).expect("Failed to write to file")
-            }
-            OutputDirection::Append(path) => Self::append_file(&self.err, path),
-        }
-    }
-    fn append_file(str: &str, path: &PathBuf) {
-        let mut f = File::options()
-            .append(true)
-            .create(true)
-            .open(path)
-            .expect("Failed to open file!");
-        write!(&mut f, "{}", str).expect("Failed to append to file");
-    }
-    fn from_out(out: &str) -> Self {
-        let line_end = if !out.is_empty() && !out.ends_with("\n") {
-            "\n"
-        } else {
-            ""
-        };
-        Self {
-            out: out.to_string() + line_end,
-            err: "".to_string(),
-        }
-    }
-    fn from_err(err: &str) -> Self {
-        let line_end = if !err.is_empty() && !err.ends_with("\n") {
-            "\n"
-        } else {
-            ""
-        };
-        Self {
-            out: "".to_string(),
-            err: err.to_string() + line_end,
-        }
-    }
-}
+use std::process::{Command, Stdio};
 
 fn main() {
-    let mut cmd_history = history::CmdHistory::init();
+    println!("&");
+    let child1 = Command::new("tail")
+        .args(["-f", "Cargo.toml"])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("First child cmd gone wrong");
 
-    loop {
-        let user_input = get_userinput(&mut cmd_history);
-        if user_input.is_empty() {
-            continue;
-            //break; //DEBUG
-        }
+    let child1_out = child1.stdout.expect("child1 stdout doesn't open");
 
-        let user_input_split = tokenizer::tokenize(&user_input);
-        //continue;
+    let child2 = Command::new("head")
+        .args(["-n", "5"])
+        .stdin(Stdio::from(child1_out))
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("child2 cmd gone wrong");
 
-        let command = cmd_parser::Command::parse(user_input_split.as_ref());
-        match &command {
-            Err(e) => {
-                OutputStrings::from_err(&(e.to_string() + "\n"))
-                    .write(&OutputDirection::Terminal, &OutputDirection::Terminal);
-            }
-            Ok(cmd) => match &cmd.cmd {
-                cmd_parser::CommandKind::Builtin(builtin_cmd) => {
-                    OutputStrings::from_out(&builtin_cmd.execute(&cmd.args, &mut cmd_history))
-                        .write(&cmd.out_direct, &cmd.err_direct);
-                }
-                cmd_parser::CommandKind::External(_) => {
-                    external_cmd::run(cmd).write(&cmd.out_direct, &cmd.err_direct)
-                }
-            },
-        };
-    }
+    let output = child2.wait_with_output().expect("child2 stdout went wrong");
+
+    println!("Child2 out: {:?}", output);
 }
