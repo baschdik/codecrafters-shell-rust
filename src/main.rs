@@ -1,8 +1,7 @@
 use std::process::{Command, Stdio};
 
 fn main() {
-    println!("$ ");
-    println!();
+    print!("$ ");
     let child1 = Command::new("tail")
         .args(["-f", "Cargo.toml"])
         .stdout(Stdio::piped())
