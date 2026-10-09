@@ -19,5 +19,5 @@ fn main() {
 
     let output = child2.wait_with_output().expect("child2 stdout went wrong");
 
-    println!("Child2 out: {:?}", output);
+    //println!("Child2 out: {:?}", output);
 }
