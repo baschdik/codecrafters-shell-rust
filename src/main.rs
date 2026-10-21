@@ -119,12 +119,11 @@ fn main() {
         }
     }
 
-    // To go one here and actually implement the pipeline!
     fn run_pipeline(
         pipeline: Vec<cmd_parser::UserCommand>,
         cmd_history: &mut history::CmdHistory,
     ) -> OutputStrings {
-        //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
+        println!("Thats the pipeline: {:?}", pipeline); //DEBUG
         if let Some(cmd) = pipeline.first()
             && let cmd_parser::CommandKind::Builtin(cmd_builtin) = &cmd.cmd
         {
@@ -133,7 +132,6 @@ fn main() {
                 &cmd.out_direct,
             );
         };
-        //external_cmd::run(pipeline.get(0).expect("Ohh no, pipeline is empty :(")) // This implements the old behavior w/o pipelines
 
         trait ExecutePipe {
             fn create_process(&self) -> std::process::Command;
@@ -211,7 +209,7 @@ fn main() {
 
         let _ = last_child.wait();
 
-        // Clean up the earlier stages (e.g. `tail -f`, which is still running after `head` exited)
+        // Clean up the earlier stages
         for mut child in children {
             let _ = child.kill();
             let _ = child.wait();
