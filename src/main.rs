@@ -4,7 +4,7 @@
 
 use std::{
     fs::{self, File},
-    io::{self, Read, Write},
+    io::{Read, Write},
     path::PathBuf,
     process::{Command, Stdio},
     thread,
@@ -44,14 +44,14 @@ impl OutputStrings {
             OutputDirection::File(path) => {
                 fs::write(path, &self.out).expect("Failed to write to file")
             }
-            OutputDirection::Append(path) => Self::append_file(&self.out, &path),
+            OutputDirection::Append(path) => Self::append_file(&self.out, path),
         }
         match &self.err_direction {
             OutputDirection::Terminal => eprint!("{}", self.err),
             OutputDirection::File(path) => {
                 fs::write(path, &self.err).expect("Failed to write to file")
             }
-            OutputDirection::Append(path) => Self::append_file(&self.err, &path),
+            OutputDirection::Append(path) => Self::append_file(&self.err, path),
         }
     }
     fn append_file(str: &str, path: &PathBuf) {
