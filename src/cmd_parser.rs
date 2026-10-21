@@ -21,7 +21,7 @@ pub enum OutputDirection {
 }
 
 #[derive(Debug)]
-pub struct Command {
+pub struct UserCommand {
     pub cmd: CommandKind,
     pub args: Vec<String>,
     pub out_direct: OutputDirection,
@@ -38,7 +38,7 @@ pub enum CommandErrors {
     MissingRedirectionPath(String),
 }
 
-impl Command {
+impl UserCommand {
     pub fn parse(input: &[String]) -> Result<Self, CommandErrors> {
         // parsing...
 
@@ -92,7 +92,7 @@ impl Command {
             }
         }
 
-        Ok(Command {
+        Ok(UserCommand {
             cmd,
             args,
             out_direct: stdout,
@@ -101,7 +101,7 @@ impl Command {
     }
 }
 
-type CmdPipeline = Vec<Command>;
+type CmdPipeline = Vec<UserCommand>;
 type CmdPipelines = Vec<CmdPipeline>;
 
 pub fn parse_cmd_set(tokens: &[String]) -> Result<CmdPipelines, CommandErrors> {
@@ -126,7 +126,7 @@ pub fn parse_cmd_set(tokens: &[String]) -> Result<CmdPipelines, CommandErrors> {
                         return Err(CommandErrors::NoInput);
                     }
 
-                    Command::parse(cmd)
+                    UserCommand::parse(cmd)
                 })
                 .collect()
         })

@@ -34,7 +34,7 @@ pub fn all_in_path() -> Option<HashSet<String>> {
     (!cmds.is_empty()).then_some(cmds)
 }
 
-pub fn run(cmd: &cmd_parser::Command) -> OutputStrings {
+pub fn run(cmd: &cmd_parser::UserCommand) -> OutputStrings {
     let cmd_parser::CommandKind::External(path) = &cmd.cmd else {
         panic!("expected external cmd")
     };

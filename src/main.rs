@@ -4,8 +4,10 @@
 
 use std::{
     fs::{self, File},
-    io::Write,
+    io::{self, Read, Write},
     path::PathBuf,
+    process::{Command, Stdio},
+    thread,
 };
 
 mod builtin_cmd;
@@ -17,8 +19,9 @@ mod userinput;
 
 use crate::{
     cmd_parser::{
-        Command, CommandKind,
+        CommandKind,
         OutputDirection::{self},
+        UserCommand,
     },
     history::HistHandling,
 };
@@ -118,7 +121,7 @@ fn main() {
 
     // To go one here and actually implement the pipeline!
     fn run_pipeline(
-        pipeline: Vec<cmd_parser::Command>,
+        pipeline: Vec<cmd_parser::UserCommand>,
         cmd_history: &mut history::CmdHistory,
     ) -> OutputStrings {
         //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
@@ -136,63 +139,112 @@ fn main() {
             fn create_process(&self) -> std::process::Command;
         }
 
-        impl ExecutePipe for Command {
-            fn create_process(&self) -> std::process::Command {
+        impl ExecutePipe for UserCommand {
+            fn create_process(&self) -> Command {
                 let CommandKind::External(cmd_path) = &self.cmd else {
                     panic!("Should be external command")
                 };
 
-                let mut process = std::process::Command::new(
-                    cmd_path.file_name().expect("No filename in command path"),
-                );
+                let mut process =
+                    Command::new(cmd_path.file_name().expect("No filename in command path"));
                 process.args(&self.args);
                 process
             }
         }
 
-        let last_idx = pipeline.len() - 1;
+        let last_cmd_no = pipeline.len() - 1;
+        let last_cmd = pipeline.last().expect("Pipeline is empty!");
+        let out_redirected = !(last_cmd.out_direct == OutputDirection::Terminal);
+        let err_redirected = !(last_cmd.err_direct == OutputDirection::Terminal);
+
         let mut prev_stdout = None;
         let mut children = Vec::new();
 
         for (i, cmd) in pipeline.iter().enumerate() {
-            let is_last = i == last_idx;
+            let is_last = i == last_cmd_no;
             let mut process = cmd.create_process();
 
             if let Some(prev) = prev_stdout.take() {
-                process.stdin(std::process::Stdio::from(prev));
+                process.stdin(Stdio::from(prev));
             }
-            process.stdout(std::process::Stdio::piped());
+            // The last command's stdout is always piped, because we read it ourselves.
+            process.stdout(Stdio::piped());
+            if is_last {
+                process.stderr(if err_redirected {
+                    Stdio::piped()
+                } else {
+                    Stdio::inherit()
+                });
+            }
+
             let mut child = process.spawn().expect("Spawning failed");
 
-            if is_last {
-                //prev_stdout = child.stdout.take();
-                children.push(child);
-                //break;
-            } else {
+            if !is_last {
                 prev_stdout = child.stdout.take();
-                children.push(child);
+            }
+            children.push(child);
+        }
+
+        let mut last_child = children.pop().expect("No Child in Children");
+
+        // stderr in its own thread, otherwise reading stdout and stderr one after
+        // the other can deadlock when the child fills the stderr pipe buffer.
+        let err_thread = last_child.stderr.take().map(|mut e| {
+            thread::spawn(move || {
+                let mut buf = Vec::new();
+                let _ = e.read_to_end(&mut buf);
+                buf
+            })
+        });
+
+        // Chunked read loop on the last stdout
+        let mut captured: Vec<u8> = Vec::new();
+        if let Some(mut child_out) = last_child.stdout.take() {
+            let stdout = io::stdout();
+            let mut buf = [0u8; 4096];
+
+            loop {
+                match child_out.read(&mut buf) {
+                    Ok(0) => break, // EOF: last process closed its stdout (usually: exited)
+                    Ok(n) => {
+                        if !out_redirected {
+                            // The user redirected: collect it, the caller writes it to the file
+                            captured.extend_from_slice(&buf[..n]);
+                        } else {
+                            // Show it right away
+                            let mut lock = stdout.lock();
+                            if lock
+                                .write_all(&buf[..n])
+                                .and_then(|_| lock.flush())
+                                .is_err()
+                            {
+                                break; // our own stdout is gone
+                            }
+                        }
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(_) => break,
+                }
             }
         }
 
-        let output = children
-            .pop()
-            .expect("No Child in children")
-            .wait_with_output()
-            .expect("Last Child failed");
+        let _ = last_child.wait();
+
+        // Clean up the earlier stages (e.g. `tail -f`, which is still running after `head` exited)
+        for mut child in children {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+
+        let err_bytes = err_thread
+            .map(|h| h.join().unwrap_or_default())
+            .unwrap_or_default();
 
         OutputStrings {
-            out: String::from_utf8(output.stdout).expect("Convertion of output.stdout failed"),
-            err: String::from_utf8(output.stderr).expect("Convertion of output.stderr failed"),
-            out_direction: pipeline
-                .last()
-                .expect("No element in cmd pipeline")
-                .out_direct
-                .to_owned(),
-            err_direction: pipeline
-                .last()
-                .expect("No element in cmd pipeline")
-                .err_direct
-                .to_owned(),
+            out: String::from_utf8_lossy(&captured).into_owned(), // empty if streamed
+            err: String::from_utf8_lossy(&err_bytes).into_owned(),
+            out_direction: last_cmd.out_direct.to_owned(),
+            err_direction: last_cmd.err_direct.to_owned(),
         }
     }
 }
