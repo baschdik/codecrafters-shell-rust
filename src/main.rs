@@ -167,8 +167,14 @@ fn main() {
             if let Some(prev) = prev_stdout.take() {
                 process.stdin(Stdio::from(prev));
             }
-            // The last command's stdout is always piped, because we read it ourselves.
-            process.stdout(Stdio::piped());
+
+            if is_last && !out_redirected {
+                // head now sees a terminal and is line-buffered, like in bash
+                process.stdout(Stdio::inherit());
+            } else {
+                process.stdout(Stdio::piped());
+            }
+
             if is_last {
                 process.stderr(if err_redirected {
                     Stdio::piped()
@@ -178,7 +184,6 @@ fn main() {
             }
 
             let mut child = process.spawn().expect("Spawning failed");
-
             if !is_last {
                 prev_stdout = child.stdout.take();
             }
@@ -197,35 +202,11 @@ fn main() {
             })
         });
 
-        // Chunked read loop on the last stdout
+        // Only Some(..) if stdout was redirected (piped). With Stdio::inherit()
+        // the child writes directly to the terminal and this is None.
         let mut captured: Vec<u8> = Vec::new();
         if let Some(mut child_out) = last_child.stdout.take() {
-            let stdout = io::stdout();
-            let mut buf = [0u8; 4096];
-
-            loop {
-                match child_out.read(&mut buf) {
-                    Ok(0) => break, // EOF: last process closed its stdout (usually: exited)
-                    Ok(n) => {
-                        if !out_redirected {
-                            // The user redirected: collect it, the caller writes it to the file
-                            captured.extend_from_slice(&buf[..n]);
-                        } else {
-                            // Show it right away
-                            let mut lock = stdout.lock();
-                            if lock
-                                .write_all(&buf[..n])
-                                .and_then(|_| lock.flush())
-                                .is_err()
-                            {
-                                break; // our own stdout is gone
-                            }
-                        }
-                    }
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                    Err(_) => break,
-                }
-            }
+            let _ = child_out.read_to_end(&mut captured);
         }
 
         let _ = last_child.wait();
@@ -241,7 +222,7 @@ fn main() {
             .unwrap_or_default();
 
         OutputStrings {
-            out: String::from_utf8_lossy(&captured).into_owned(), // empty if streamed
+            out: String::from_utf8_lossy(&captured).into_owned(), // empty if inherited
             err: String::from_utf8_lossy(&err_bytes).into_owned(),
             out_direction: last_cmd.out_direct.to_owned(),
             err_direction: last_cmd.err_direct.to_owned(),
