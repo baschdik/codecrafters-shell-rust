@@ -8,7 +8,7 @@ use crate::external_cmd;
 use crate::history;
 use crate::history::HistHandling;
 
-#[derive(Debug, EnumIter)]
+#[derive(Debug, EnumIter, PartialEq, Eq)]
 pub enum Builtins {
     Echo,
     Exit,

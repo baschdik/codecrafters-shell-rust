@@ -20,12 +20,19 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "find_all",
  "is_executable",
  "strum",
  "termion",
  "thiserror",
  "use",
 ]
+
+[[package]]
+name = "find_all"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a3b40b97938cd51e8e285e12019dcd28b7e71d7398b6074d92308cebc03888f"
 
 [[package]]
 name = "heck"

@@ -1,3 +1,4 @@
+use find_all::FindAll;
 use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 
@@ -6,13 +7,13 @@ use crate::{
     external_cmd::{self},
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum CommandKind {
     Builtin(builtin_cmd::Builtins),
     External(PathBuf),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OutputDirection {
     Terminal,
     File(PathBuf),
@@ -98,4 +99,36 @@ impl Command {
             err_direct: stderr,
         })
     }
+}
+
+type CmdPipeline = Vec<Command>;
+type CmdPipelines = Vec<CmdPipeline>;
+
+pub fn parse_cmd_set(tokens: &[String]) -> Result<CmdPipelines, CommandErrors> {
+    // Accept a trailing semicolon.
+    let tokens = if tokens.last().is_some_and(|t| t == ";") {
+        &tokens[..tokens.len() - 1]
+    } else {
+        tokens
+    };
+
+    if tokens.is_empty() {
+        return Err(CommandErrors::NoInput);
+    }
+
+    tokens
+        .split(|token| token == ";")
+        .map(|pipeline| {
+            pipeline
+                .split(|token| token == "|")
+                .map(|cmd| {
+                    if cmd.is_empty() {
+                        return Err(CommandErrors::NoInput);
+                    }
+
+                    Command::parse(cmd)
+                })
+                .collect()
+        })
+        .collect()
 }

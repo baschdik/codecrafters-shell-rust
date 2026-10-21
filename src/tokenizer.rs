@@ -21,8 +21,8 @@ pub fn tokenize(input: &str) -> Vec<String> {
                         .push(input_iter.next().unwrap_or_default());
                 } else if c.is_whitespace() {
                     processed.push("".to_string());
-                    //remove extra whitespace:
-                    while input_iter.next_if(|c| c.is_whitespace()).is_some() {}
+                } else if c == '|' || c == ';' {
+                    processed.push(c.to_string());
                 } else if c == '\'' {
                     //Ignore Empty quotes '':
                     if input_iter.next_if(|c| *c == '\'').is_some() {
@@ -71,6 +71,11 @@ pub fn tokenize(input: &str) -> Vec<String> {
         }
     }
 
+    processed = processed
+        .iter()
+        .filter(|c| !c.is_empty())
+        .map(|c| c.to_string())
+        .collect();
     //println!("Final: {:?}", processed); //DEBUG
     processed
 }

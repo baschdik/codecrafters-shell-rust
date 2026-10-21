@@ -47,5 +47,7 @@ pub fn run(cmd: &cmd_parser::Command) -> OutputStrings {
     OutputStrings {
         out: output_msg.unwrap().to_string(),
         err: error_msg.unwrap().to_string(),
+        out_direction: cmd.out_direct.to_owned(),
+        err_direction: cmd.err_direct.to_owned(),
     }
 }
