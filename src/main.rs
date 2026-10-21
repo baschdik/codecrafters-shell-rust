@@ -165,8 +165,9 @@ fn main() {
             let mut child = process.spawn().expect("Spawning failed");
 
             if is_last {
+                //prev_stdout = child.stdout.take();
                 children.push(child);
-                break;
+                //break;
             } else {
                 prev_stdout = child.stdout.take();
                 children.push(child);
