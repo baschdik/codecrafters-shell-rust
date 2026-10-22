@@ -119,6 +119,23 @@ fn main() {
         }
     }
 
+    trait ExecutePipe {
+        fn create_process(&self) -> std::process::Command;
+    }
+
+    impl ExecutePipe for UserCommand {
+        fn create_process(&self) -> Command {
+            let CommandKind::External(cmd_path) = &self.cmd else {
+                panic!("Should be external command")
+            };
+
+            let mut process =
+                Command::new(cmd_path.file_name().expect("No filename in command path"));
+            process.args(&self.args);
+            process
+        }
+    }
+
     fn run_pipeline(
         pipeline: Vec<cmd_parser::UserCommand>,
         cmd_history: &mut history::CmdHistory,
@@ -133,22 +150,35 @@ fn main() {
             );
         };
 
-        trait ExecutePipe {
-            fn create_process(&self) -> std::process::Command;
-        }
-
-        impl ExecutePipe for UserCommand {
-            fn create_process(&self) -> Command {
-                let CommandKind::External(cmd_path) = &self.cmd else {
-                    panic!("Should be external command")
-                };
-
-                let mut process =
-                    Command::new(cmd_path.file_name().expect("No filename in command path"));
-                process.args(&self.args);
-                process
+        let mut output = None;
+        for pipe_section in pipeline.chunk_by(|a, b| a.is_builtin() == b.is_builtin()) {
+            if pipe_section[0].is_builtin() {
+                let last_cmd = pipe_section
+                    .iter()
+                    .filter(|cmd| !cmd.cmd.has_sideeffects())
+                    .last();
+                if let Some(cmd) = last_cmd
+                    && let cmd_parser::CommandKind::Builtin(cmd_builtin) = &cmd.cmd
+                {
+                    output = Some(OutputStrings::from_out(
+                        &cmd_builtin.execute(&cmd.args, cmd_history),
+                        &cmd.out_direct,
+                    ));
+                }
+            } else {
+                output = Some(run_pipeline_for_external_cmd(pipe_section))
             }
         }
+        output.unwrap()
+    }
+
+    fn run_pipeline_for_external_cmd(pipeline: &[cmd_parser::UserCommand]) -> OutputStrings {
+        //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
+        if let Some(cmd) = pipeline.first()
+            && let cmd_parser::CommandKind::Builtin(_) = &cmd.cmd
+        {
+            panic!("Run 'run_pipeline_for_external_cmd' with build-in cmd  ")
+        };
 
         let last_cmd_no = pipeline.len() - 1;
         let last_cmd = pipeline.last().expect("Pipeline is empty!");

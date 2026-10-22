@@ -36,13 +36,24 @@ impl FromStr for Builtins {
 
 impl Builtins {
     fn get_cmd_name(&self) -> String {
-        match &self {
+        match self {
             Builtins::Cd => "cd".to_string(),
             Builtins::Echo => "echo".to_string(),
             Builtins::Exit => "exit".to_string(),
             Builtins::History => "history".to_string(),
             Builtins::Pwd => "pwd".to_string(),
             Builtins::Type => "type".to_string(),
+        }
+    }
+
+    pub fn has_sideeffects(&self) -> bool {
+        match self {
+            Builtins::Cd => true,
+            Builtins::Echo => false,
+            Builtins::Exit => true,
+            Builtins::History => true,
+            Builtins::Pwd => false,
+            Builtins::Type => false,
         }
     }
 

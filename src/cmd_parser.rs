@@ -3,6 +3,7 @@ use thiserror::Error;
 
 use crate::{
     builtin_cmd::{self, Builtins},
+    cmd_parser::CommandKind::External,
     external_cmd::{self},
 };
 
@@ -10,6 +11,15 @@ use crate::{
 pub enum CommandKind {
     Builtin(builtin_cmd::Builtins),
     External(PathBuf),
+}
+
+impl CommandKind {
+    pub fn has_sideeffects(&self) -> bool {
+        match self {
+            CommandKind::Builtin(builtin) => builtin.has_sideeffects(),
+            CommandKind::External(_) => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,6 +107,9 @@ impl UserCommand {
             out_direct: stdout,
             err_direct: stderr,
         })
+    }
+    pub fn is_builtin(&self) -> bool {
+        matches!(self.cmd, CommandKind::Builtin(_))
     }
 }
 
