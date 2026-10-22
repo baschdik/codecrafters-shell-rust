@@ -3,7 +3,6 @@ use thiserror::Error;
 
 use crate::{
     builtin_cmd::{self, Builtins},
-    cmd_parser::CommandKind::External,
     external_cmd::{self},
 };
 

@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
-    process::{self, Command, Stdio},
+    process::{Command, Stdio},
     thread,
 };
 
@@ -166,10 +166,7 @@ fn main() {
         let drop_external_output = pipeline.last().is_some_and(|a| a.is_builtin());
         for pipe_section in pipeline.chunk_by(|a, b| a.is_builtin() == b.is_builtin()) {
             if pipe_section[0].is_builtin() {
-                let last_cmd = pipe_section
-                    .iter()
-                    .filter(|cmd| !cmd.cmd.has_sideeffects())
-                    .last();
+                let last_cmd = pipe_section.iter().rfind(|cmd| !cmd.cmd.has_sideeffects());
                 if let Some(cmd) = last_cmd
                     && let cmd_parser::CommandKind::Builtin(cmd_builtin) = &cmd.cmd
                 {
@@ -181,7 +178,7 @@ fn main() {
             } else {
                 output = Some(run_pipeline_for_external_cmd(
                     pipe_section,
-                    output.and_then(|output| Some(output.out)),
+                    output.map(|output| output.out),
                     drop_external_output,
                 ))
             }
