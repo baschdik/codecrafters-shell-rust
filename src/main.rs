@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
-    process::{Command, Stdio},
+    process::{self, Command, Stdio},
     thread,
 };
 
@@ -34,6 +34,17 @@ struct OutputStrings {
     err: String,
     out_direction: OutputDirection,
     err_direction: OutputDirection,
+}
+
+impl Default for OutputStrings {
+    fn default() -> Self {
+        OutputStrings {
+            out: "".to_string(),
+            err: "".to_string(),
+            out_direction: OutputDirection::Terminal,
+            err_direction: OutputDirection::Terminal,
+        }
+    }
 }
 
 impl OutputStrings {
@@ -141,7 +152,8 @@ fn main() {
         cmd_history: &mut history::CmdHistory,
     ) -> OutputStrings {
         //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
-        if let Some(cmd) = pipeline.first()
+        if pipeline.len() == 1
+            && let Some(cmd) = pipeline.first()
             && let cmd_parser::CommandKind::Builtin(cmd_builtin) = &cmd.cmd
         {
             return OutputStrings::from_out(
@@ -166,13 +178,19 @@ fn main() {
                     ));
                 }
             } else {
-                output = Some(run_pipeline_for_external_cmd(pipe_section))
+                output = Some(run_pipeline_for_external_cmd(
+                    pipe_section,
+                    output.and_then(|output| Some(output.out)),
+                ))
             }
         }
-        output.unwrap()
+        output.unwrap_or_default()
     }
 
-    fn run_pipeline_for_external_cmd(pipeline: &[cmd_parser::UserCommand]) -> OutputStrings {
+    fn run_pipeline_for_external_cmd(
+        pipeline: &[cmd_parser::UserCommand],
+        prev_input: Option<String>,
+    ) -> OutputStrings {
         //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
         if let Some(cmd) = pipeline.first()
             && let cmd_parser::CommandKind::Builtin(_) = &cmd.cmd
@@ -192,7 +210,11 @@ fn main() {
             let is_last = i == last_cmd_no;
             let mut process = cmd.create_process();
 
-            if let Some(prev) = prev_stdout.take() {
+            if i == 0
+                && let Some(_) = &prev_input
+            {
+                process.stdin(Stdio::piped());
+            } else if let Some(prev) = prev_stdout.take() {
                 process.stdin(Stdio::from(prev));
             }
 
@@ -212,6 +234,12 @@ fn main() {
             }
 
             let mut child = process.spawn().expect("Spawning failed");
+            if i == 0
+                && let Some(prev) = &prev_input
+            {
+                let mut child_stdin = child.stdin.take().expect("Stdin was not piped");
+                let _ = child_stdin.write_all(prev.as_bytes());
+            }
             if !is_last {
                 prev_stdout = child.stdout.take();
             }
