@@ -123,7 +123,7 @@ fn main() {
         pipeline: Vec<cmd_parser::UserCommand>,
         cmd_history: &mut history::CmdHistory,
     ) -> OutputStrings {
-        println!("Thats the pipeline: {:?}", pipeline); //DEBUG
+        //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
         if let Some(cmd) = pipeline.first()
             && let cmd_parser::CommandKind::Builtin(cmd_builtin) = &cmd.cmd
         {
@@ -167,7 +167,7 @@ fn main() {
             }
 
             if is_last && !out_redirected {
-                // head now sees a terminal and is line-buffered, like in bash
+                // last command now sees a terminal and is therefore line-buffered
                 process.stdout(Stdio::inherit());
             } else {
                 process.stdout(Stdio::piped());
