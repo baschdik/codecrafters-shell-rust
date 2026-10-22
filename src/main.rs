@@ -163,6 +163,7 @@ fn main() {
         };
 
         let mut output = None;
+        let drop_external_output = pipeline.last().is_some_and(|a| a.is_builtin());
         for pipe_section in pipeline.chunk_by(|a, b| a.is_builtin() == b.is_builtin()) {
             if pipe_section[0].is_builtin() {
                 let last_cmd = pipe_section
@@ -181,6 +182,7 @@ fn main() {
                 output = Some(run_pipeline_for_external_cmd(
                     pipe_section,
                     output.and_then(|output| Some(output.out)),
+                    drop_external_output,
                 ))
             }
         }
@@ -190,6 +192,7 @@ fn main() {
     fn run_pipeline_for_external_cmd(
         pipeline: &[cmd_parser::UserCommand],
         prev_input: Option<String>,
+        drop_output: bool,
     ) -> OutputStrings {
         //println!("Thats the pipeline: {:?}", pipeline); //DEBUG
         if let Some(cmd) = pipeline.first()
@@ -218,7 +221,7 @@ fn main() {
                 process.stdin(Stdio::from(prev));
             }
 
-            if is_last && !out_redirected {
+            if is_last && !out_redirected && !drop_output {
                 // last command now sees a terminal and is therefore line-buffered
                 process.stdout(Stdio::inherit());
             } else {
