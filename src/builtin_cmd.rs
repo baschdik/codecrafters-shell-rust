@@ -10,12 +10,13 @@ use crate::history::HistHandling;
 
 #[derive(Debug, EnumIter, PartialEq, Eq)]
 pub enum Builtins {
+    Cd,
     Echo,
     Exit,
-    Type,
-    Pwd,
-    Cd,
     History,
+    Jobs,
+    Pwd,
+    Type,
 }
 
 impl FromStr for Builtins {
@@ -27,6 +28,7 @@ impl FromStr for Builtins {
             "echo" => Ok(Builtins::Echo),
             "exit" => Ok(Builtins::Exit),
             "history" => Ok(Builtins::History),
+            "jobs" => Ok(Builtins::Jobs),
             "pwd" => Ok(Builtins::Pwd),
             "type" => Ok(Builtins::Type),
             _ => Err(()),
@@ -41,6 +43,7 @@ impl Builtins {
             Builtins::Echo => "echo".to_string(),
             Builtins::Exit => "exit".to_string(),
             Builtins::History => "history".to_string(),
+            Builtins::Jobs => "jobs".to_string(),
             Builtins::Pwd => "pwd".to_string(),
             Builtins::Type => "type".to_string(),
         }
@@ -52,6 +55,7 @@ impl Builtins {
             Builtins::Echo => false,
             Builtins::Exit => true,
             Builtins::History => true,
+            Builtins::Jobs => true,
             Builtins::Pwd => false,
             Builtins::Type => false,
         }
@@ -71,6 +75,7 @@ impl Builtins {
             Builtins::Echo => builtin_echo(args),
             Builtins::Exit => builtin_exit(cmd_history),
             Builtins::History => builtin_history(args, cmd_history),
+            Builtins::Jobs => builtin_jobs(),
             Builtins::Pwd => builtin_pwd(),
             Builtins::Type => builtin_type(args),
         }
@@ -173,6 +178,10 @@ pub fn builtin_history(args: &[String], cmd_history: &mut history::CmdHistory) -
         #[error("Number of Entrys to Show must be Integer")]
         NoIntArg,
     }
+}
+
+pub fn builtin_jobs() -> String {
+    "".to_string()
 }
 
 pub fn builtin_pwd() -> String {
